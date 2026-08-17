@@ -1,0 +1,138 @@
+{
+  "": {
+    "swift-dependencies": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/primary.swiftdeps"
+  },
+  "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/Sources/MVVMCBlueprint/Core/Navigation/Coordinator.swift": {
+    "dependencies": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/Coordinator.d",
+    "object": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/Coordinator.swift.o",
+    "swiftmodule": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/Coordinator~partial.swiftmodule",
+    "swift-dependencies": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/Coordinator.swiftdeps",
+    "diagnostics": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/Coordinator.dia"
+  },
+  "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/Sources/MVVMCBlueprint/Core/Navigation/NavigationRouter.swift": {
+    "dependencies": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/NavigationRouter.d",
+    "object": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/NavigationRouter.swift.o",
+    "swiftmodule": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/NavigationRouter~partial.swiftmodule",
+    "swift-dependencies": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/NavigationRouter.swiftdeps",
+    "diagnostics": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/NavigationRouter.dia"
+  },
+  "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/Sources/MVVMCBlueprint/Features/Checkout/Coordinators/CheckoutCoordinator.swift": {
+    "dependencies": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/CheckoutCoordinator.d",
+    "object": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/CheckoutCoordinator.swift.o",
+    "swiftmodule": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/CheckoutCoordinator~partial.swiftmodule",
+    "swift-dependencies": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/CheckoutCoordinator.swiftdeps",
+    "diagnostics": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/CheckoutCoordinator.dia"
+  },
+  "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/Sources/MVVMCBlueprint/Features/Checkout/Coordinators/CheckoutRoute.swift": {
+    "dependencies": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/CheckoutRoute.d",
+    "object": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/CheckoutRoute.swift.o",
+    "swiftmodule": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/CheckoutRoute~partial.swiftmodule",
+    "swift-dependencies": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/CheckoutRoute.swiftdeps",
+    "diagnostics": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/CheckoutRoute.dia"
+  },
+  "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/Sources/MVVMCBlueprint/Features/Checkout/Data/DTOs/OrderDTO.swift": {
+    "dependencies": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/OrderDTO.d",
+    "object": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/OrderDTO.swift.o",
+    "swiftmodule": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/OrderDTO~partial.swiftmodule",
+    "swift-dependencies": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/OrderDTO.swiftdeps",
+    "diagnostics": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/OrderDTO.dia"
+  },
+  "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/Sources/MVVMCBlueprint/Features/Checkout/Data/Repositories/OrderRepository.swift": {
+    "dependencies": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/OrderRepository.d",
+    "object": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/OrderRepository.swift.o",
+    "swiftmodule": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/OrderRepository~partial.swiftmodule",
+    "swift-dependencies": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/OrderRepository.swiftdeps",
+    "diagnostics": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/OrderRepository.dia"
+  },
+  "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/Sources/MVVMCBlueprint/Features/Checkout/Data/Repositories/OrderRepositoryProtocol.swift": {
+    "dependencies": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/OrderRepositoryProtocol.d",
+    "object": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/OrderRepositoryProtocol.swift.o",
+    "swiftmodule": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/OrderRepositoryProtocol~partial.swiftmodule",
+    "swift-dependencies": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/OrderRepositoryProtocol.swiftdeps",
+    "diagnostics": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/OrderRepositoryProtocol.dia"
+  },
+  "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/Sources/MVVMCBlueprint/Features/Checkout/Domain/Models/Discount.swift": {
+    "dependencies": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/Discount.d",
+    "object": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/Discount.swift.o",
+    "swiftmodule": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/Discount~partial.swiftmodule",
+    "swift-dependencies": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/Discount.swiftdeps",
+    "diagnostics": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/Discount.dia"
+  },
+  "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/Sources/MVVMCBlueprint/Features/Checkout/Domain/Models/Order.swift": {
+    "dependencies": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/Order.d",
+    "object": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/Order.swift.o",
+    "swiftmodule": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/Order~partial.swiftmodule",
+    "swift-dependencies": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/Order.swiftdeps",
+    "diagnostics": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/Order.dia"
+  },
+  "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/Sources/MVVMCBlueprint/Features/Checkout/Domain/Models/PaymentResult.swift": {
+    "dependencies": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/PaymentResult.d",
+    "object": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/PaymentResult.swift.o",
+    "swiftmodule": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/PaymentResult~partial.swiftmodule",
+    "swift-dependencies": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/PaymentResult.swiftdeps",
+    "diagnostics": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/PaymentResult.dia"
+  },
+  "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/Sources/MVVMCBlueprint/Features/Checkout/Domain/UseCases/CalculateDiscountUseCase.swift": {
+    "dependencies": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/CalculateDiscountUseCase.d",
+    "object": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/CalculateDiscountUseCase.swift.o",
+    "swiftmodule": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/CalculateDiscountUseCase~partial.swiftmodule",
+    "swift-dependencies": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/CalculateDiscountUseCase.swiftdeps",
+    "diagnostics": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/CalculateDiscountUseCase.dia"
+  },
+  "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/Sources/MVVMCBlueprint/Features/Checkout/Domain/UseCases/ProcessPaymentUseCase.swift": {
+    "dependencies": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/ProcessPaymentUseCase.d",
+    "object": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/ProcessPaymentUseCase.swift.o",
+    "swiftmodule": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/ProcessPaymentUseCase~partial.swiftmodule",
+    "swift-dependencies": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/ProcessPaymentUseCase.swiftdeps",
+    "diagnostics": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/ProcessPaymentUseCase.dia"
+  },
+  "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/Sources/MVVMCBlueprint/Features/Checkout/ViewModels/CheckoutInputViewModel.swift": {
+    "dependencies": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/CheckoutInputViewModel.d",
+    "object": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/CheckoutInputViewModel.swift.o",
+    "swiftmodule": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/CheckoutInputViewModel~partial.swiftmodule",
+    "swift-dependencies": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/CheckoutInputViewModel.swiftdeps",
+    "diagnostics": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/CheckoutInputViewModel.dia"
+  },
+  "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/Sources/MVVMCBlueprint/Features/Checkout/ViewModels/DiscountViewModel.swift": {
+    "dependencies": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/DiscountViewModel.d",
+    "object": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/DiscountViewModel.swift.o",
+    "swiftmodule": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/DiscountViewModel~partial.swiftmodule",
+    "swift-dependencies": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/DiscountViewModel.swiftdeps",
+    "diagnostics": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/DiscountViewModel.dia"
+  },
+  "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/Sources/MVVMCBlueprint/Features/Checkout/ViewModels/PaymentViewModel.swift": {
+    "dependencies": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/PaymentViewModel.d",
+    "object": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/PaymentViewModel.swift.o",
+    "swiftmodule": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/PaymentViewModel~partial.swiftmodule",
+    "swift-dependencies": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/PaymentViewModel.swiftdeps",
+    "diagnostics": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/PaymentViewModel.dia"
+  },
+  "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/Sources/MVVMCBlueprint/Features/Checkout/Views/CheckoutContainerView.swift": {
+    "dependencies": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/CheckoutContainerView.d",
+    "object": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/CheckoutContainerView.swift.o",
+    "swiftmodule": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/CheckoutContainerView~partial.swiftmodule",
+    "swift-dependencies": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/CheckoutContainerView.swiftdeps",
+    "diagnostics": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/CheckoutContainerView.dia"
+  },
+  "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/Sources/MVVMCBlueprint/Features/Checkout/Views/CheckoutInputView.swift": {
+    "dependencies": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/CheckoutInputView.d",
+    "object": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/CheckoutInputView.swift.o",
+    "swiftmodule": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/CheckoutInputView~partial.swiftmodule",
+    "swift-dependencies": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/CheckoutInputView.swiftdeps",
+    "diagnostics": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/CheckoutInputView.dia"
+  },
+  "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/Sources/MVVMCBlueprint/Features/Checkout/Views/DiscountView.swift": {
+    "dependencies": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/DiscountView.d",
+    "object": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/DiscountView.swift.o",
+    "swiftmodule": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/DiscountView~partial.swiftmodule",
+    "swift-dependencies": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/DiscountView.swiftdeps",
+    "diagnostics": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/DiscountView.dia"
+  },
+  "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/Sources/MVVMCBlueprint/Features/Checkout/Views/PaymentView.swift": {
+    "dependencies": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/PaymentView.d",
+    "object": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/PaymentView.swift.o",
+    "swiftmodule": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/PaymentView~partial.swiftmodule",
+    "swift-dependencies": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/PaymentView.swiftdeps",
+    "diagnostics": "/Users/lzeng/Documents/A_Career/CareerWorkspace/TechnicalDrilling/MVVMC-Blueprint/.build/arm64-apple-macosx/debug/MVVMCBlueprint.build/PaymentView.dia"
+  }
+}

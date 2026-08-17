@@ -1,0 +1,62 @@
+@startuml LayerDependencies
+skinparam packageBackgroundColor #F8F9FA
+skinparam packageBorderColor #4A90E2
+
+package "UI Layer (SwiftUI)" #EBF3FB {
+    [CheckoutContainerView]
+    [CheckoutInputView]
+    [DiscountView]
+    [PaymentView]
+}
+
+package "Presentation & Navigation Layer" #F3E9F8 {
+    [NavigationRouter]
+    [CheckoutCoordinator]
+    [CheckoutCoordinatorProtocol] as CoordProto
+    [CheckoutInputViewModel]
+    [DiscountViewModel]
+    [PaymentViewModel]
+}
+
+package "Domain Layer (Pure Business Logic)" #E8F8F5 {
+    [CalculateDiscountUseCaseProtocol] as CalcUseCaseProto
+    [ProcessPaymentUseCaseProtocol] as PayUseCaseProto
+    [CalculateDiscountUseCase]
+    [ProcessPaymentUseCase]
+    [Order Model] as Order
+    [Discount Model] as Discount
+    [PaymentResult Model] as PaymentResult
+}
+
+package "Data Layer" #FEF9E7 {
+    [OrderRepositoryProtocol] as RepoProto
+    [OrderRepository]
+    [OrderDTO]
+}
+
+' Relationships
+[CheckoutContainerView] --> [NavigationRouter]
+[CheckoutContainerView] --> [CheckoutCoordinator]
+[CheckoutInputView] --> [CheckoutInputViewModel]
+[DiscountView] --> [DiscountViewModel]
+[PaymentView] --> [PaymentViewModel]
+
+[CheckoutInputViewModel] ..> CoordProto
+[DiscountViewModel] ..> CoordProto
+[PaymentViewModel] ..> CoordProto
+
+[CheckoutCoordinator] ..|> CoordProto
+[CheckoutCoordinator] --> [NavigationRouter]
+
+[DiscountViewModel] --> CalcUseCaseProto
+[PaymentViewModel] --> PayUseCaseProto
+
+[CalculateDiscountUseCase] ..|> CalcUseCaseProto
+[ProcessPaymentUseCase] ..|> PayUseCaseProto
+[ProcessPaymentUseCase] --> RepoProto
+
+[OrderRepository] ..|> RepoProto
+[OrderRepository] --> [OrderDTO]
+[OrderRepository] --> Order
+
+@enduml

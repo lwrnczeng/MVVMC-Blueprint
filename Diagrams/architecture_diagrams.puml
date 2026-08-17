@@ -19,6 +19,7 @@ package "Presentation & Navigation Layer" #F3E9F8 {
 }
 
 package "Domain Layer (Pure Business Logic)" #E8F8F5 {
+    [OrderRepositoryProtocol] as RepoProto
     [CalculateDiscountUseCaseProtocol] as CalcUseCaseProto
     [ProcessPaymentUseCaseProtocol] as PayUseCaseProto
     [CalculateDiscountUseCase]
@@ -29,7 +30,6 @@ package "Domain Layer (Pure Business Logic)" #E8F8F5 {
 }
 
 package "Data Layer" #FEF9E7 {
-    [OrderRepositoryProtocol] as RepoProto
     [OrderRepository]
     [OrderDTO]
 }
@@ -57,7 +57,7 @@ package "Data Layer" #FEF9E7 {
 
 [OrderRepository] ..|> RepoProto
 [OrderRepository] --> [OrderDTO]
-[OrderRepository] --> Order
+[OrderDTO] ..> Order
 
 @enduml
 
@@ -137,7 +137,12 @@ package "ViewModels" {
     PaymentViewModel --> CheckoutCoordinatorProtocol
 }
 
-package "Domain Layer" {
+package "Domain Layer (Owns Entities & Repository Protocols)" {
+    interface OrderRepositoryProtocol {
+        +submitOrder(order: Order): Order
+        +processPayment(orderId: UUID, amount: Decimal): PaymentResult
+    }
+
     interface CalculateDiscountUseCaseProtocol {
         +execute(subtotal: Decimal, promoCode: String): Discount
     }
@@ -159,21 +164,25 @@ package "Domain Layer" {
     ProcessPaymentUseCaseProtocol <|.. ProcessPaymentUseCase
     DiscountViewModel --> CalculateDiscountUseCaseProtocol
     PaymentViewModel --> ProcessPaymentUseCaseProtocol
+    ProcessPaymentUseCase --> OrderRepositoryProtocol
 }
 
-package "Data Layer" {
-    interface OrderRepositoryProtocol {
-        +submitOrder(order: Order): OrderDTO
+package "Data Layer (Implementation & Storage)" {
+    class OrderRepository {
+        +submitOrder(order: Order): Order
         +processPayment(orderId: UUID, amount: Decimal): PaymentResult
     }
 
-    class OrderRepository {
-        +submitOrder(order: Order): OrderDTO
-        +processPayment(orderId: UUID, amount: Decimal): PaymentResult
+    class OrderDTO {
+        +orderId: String
+        +totalAmount: Double
+        +status: String
+        +createdAt: String
+        +toDomain(): Order
     }
 
     OrderRepositoryProtocol <|.. OrderRepository
-    ProcessPaymentUseCase --> OrderRepositoryProtocol
+    OrderRepository --> OrderDTO
 }
 @enduml
 

@@ -8,7 +8,6 @@ This document contains PlantUML diagrams (`@startuml` ... `@enduml`) illustratin
 
 ```plantuml
 @startuml LayerDependencies
-skinparam componentStyle uml2
 skinparam packageBackgroundColor #F8F9FA
 skinparam packageBorderColor #4A90E2
 
@@ -22,26 +21,26 @@ package "UI Layer (SwiftUI)" #EBF3FB {
 package "Presentation & Navigation Layer" #F3E9F8 {
     [NavigationRouter]
     [CheckoutCoordinator]
-    interface "CheckoutCoordinatorProtocol" as CoordProto
+    [CheckoutCoordinatorProtocol] as CoordProto
     [CheckoutInputViewModel]
     [DiscountViewModel]
     [PaymentViewModel]
 }
 
 package "Domain Layer (Pure Business Logic)" #E8F8F5 {
-    interface "CalculateDiscountUseCaseProtocol" as CalcUseCaseProto
-    interface "ProcessPaymentUseCaseProtocol" as PayUseCaseProto
+    [OrderRepositoryProtocol] as RepoProto
+    [CalculateDiscountUseCaseProtocol] as CalcUseCaseProto
+    [ProcessPaymentUseCaseProtocol] as PayUseCaseProto
     [CalculateDiscountUseCase]
     [ProcessPaymentUseCase]
-    class Order
-    class Discount
-    class PaymentResult
+    [Order Model] as Order
+    [Discount Model] as Discount
+    [PaymentResult Model] as PaymentResult
 }
 
 package "Data Layer" #FEF9E7 {
-    interface "OrderRepositoryProtocol" as RepoProto
     [OrderRepository]
-    class OrderDTO
+    [OrderDTO]
 }
 
 ' Relationships
@@ -51,9 +50,9 @@ package "Data Layer" #FEF9E7 {
 [DiscountView] --> [DiscountViewModel]
 [PaymentView] --> [PaymentViewModel]
 
-[CheckoutInputViewModel] .up.> CoordProto
-[DiscountViewModel] .up.> CoordProto
-[PaymentViewModel] .up.> CoordProto
+[CheckoutInputViewModel] ..> CoordProto
+[DiscountViewModel] ..> CoordProto
+[PaymentViewModel] ..> CoordProto
 
 [CheckoutCoordinator] ..|> CoordProto
 [CheckoutCoordinator] --> [NavigationRouter]
@@ -66,8 +65,8 @@ package "Data Layer" #FEF9E7 {
 [ProcessPaymentUseCase] --> RepoProto
 
 [OrderRepository] ..|> RepoProto
-[OrderRepository] --> OrderDTO
-[OrderRepository] --> Order
+[OrderRepository] --> [OrderDTO]
+[OrderDTO] ..> Order
 
 @enduml
 ```
@@ -93,7 +92,7 @@ package "Core Navigation" {
         +removeChild(coordinator: Coordinator)
     }
 
-    class NavigationRouter << (C, #ADD8E6) @MainActor >> {
+    class NavigationRouter << MainActor >> {
         +path: NavigationPath
         +push(route: T)
         +pop()
@@ -107,7 +106,7 @@ package "Core Navigation" {
         +finishCheckout()
     }
 
-    class CheckoutCoordinator << (C, #ADD8E6) @MainActor >> {
+    class CheckoutCoordinator << MainActor >> {
         +router: NavigationRouter
         -repository: OrderRepositoryProtocol
         -calculateDiscountUseCase: CalculateDiscountUseCaseProtocol
@@ -121,7 +120,7 @@ package "Core Navigation" {
 }
 
 package "ViewModels" {
-    class CheckoutInputViewModel << (C, #ADD8E6) @MainActor >> {
+    class CheckoutInputViewModel << MainActor >> {
         +itemName: String
         +itemPriceText: String
         +quantity: Int
@@ -129,7 +128,7 @@ package "ViewModels" {
         +proceedToDiscount()
     }
 
-    class DiscountViewModel << (C, #ADD8E6) @MainActor >> {
+    class DiscountViewModel << MainActor >> {
         +order: Order
         +promoCodeInput: String
         +appliedDiscount: Discount?
@@ -139,7 +138,7 @@ package "ViewModels" {
         +skipOrProceedToPayment()
     }
 
-    class PaymentViewModel << (C, #ADD8E6) @MainActor >> {
+    class PaymentViewModel << MainActor >> {
         +order: Order
         +discount: Discount?
         +finalAmount: Decimal
@@ -153,7 +152,12 @@ package "ViewModels" {
     PaymentViewModel --> CheckoutCoordinatorProtocol
 }
 
-package "Domain Layer" {
+package "Domain Layer (Owns Entities & Repository Protocols)" {
+    interface OrderRepositoryProtocol {
+        +submitOrder(order: Order): Order
+        +processPayment(orderId: UUID, amount: Decimal): PaymentResult
+    }
+
     interface CalculateDiscountUseCaseProtocol {
         +execute(subtotal: Decimal, promoCode: String): Discount
     }
@@ -175,21 +179,25 @@ package "Domain Layer" {
     ProcessPaymentUseCaseProtocol <|.. ProcessPaymentUseCase
     DiscountViewModel --> CalculateDiscountUseCaseProtocol
     PaymentViewModel --> ProcessPaymentUseCaseProtocol
+    ProcessPaymentUseCase --> OrderRepositoryProtocol
 }
 
-package "Data Layer" {
-    interface OrderRepositoryProtocol {
-        +submitOrder(order: Order): OrderDTO
+package "Data Layer (Implementation & Storage)" {
+    class OrderRepository {
+        +submitOrder(order: Order): Order
         +processPayment(orderId: UUID, amount: Decimal): PaymentResult
     }
 
-    class OrderRepository {
-        +submitOrder(order: Order): OrderDTO
-        +processPayment(orderId: UUID, amount: Decimal): PaymentResult
+    class OrderDTO {
+        +orderId: String
+        +totalAmount: Double
+        +status: String
+        +createdAt: String
+        +toDomain(): Order
     }
 
     OrderRepositoryProtocol <|.. OrderRepository
-    ProcessPaymentUseCase --> OrderRepositoryProtocol
+    OrderRepository --> OrderDTO
 }
 @enduml
 ```
@@ -202,15 +210,15 @@ package "Data Layer" {
 @startuml SequenceDiagram
 autonumber
 actor User
-participant "CheckoutInputView" as View
-participant "CheckoutInputViewModel" as VM
-participant "CheckoutCoordinator" as Coord
-participant "NavigationRouter" as Router
-participant "DiscountViewModel" as DiscVM
-participant "CalculateDiscountUseCase" as UseCase
-participant "PaymentViewModel" as PayVM
-participant "ProcessPaymentUseCase" as PayUseCase
-participant "OrderRepository" as Repo
+participant CheckoutInputView as View
+participant CheckoutInputViewModel as VM
+participant CheckoutCoordinator as Coord
+participant NavigationRouter as Router
+participant DiscountViewModel as DiscVM
+participant CalculateDiscountUseCase as UseCase
+participant PaymentViewModel as PayVM
+participant ProcessPaymentUseCase as PayUseCase
+participant OrderRepository as Repo
 
 User -> View: Enters Item Name & Price, Taps "Continue"
 View -> VM: proceedToDiscount()

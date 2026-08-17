@@ -19,6 +19,7 @@ package "Presentation & Navigation Layer" #F3E9F8 {
 }
 
 package "Domain Layer (Pure Business Logic)" #E8F8F5 {
+    [OrderRepositoryProtocol] as RepoProto
     [CalculateDiscountUseCaseProtocol] as CalcUseCaseProto
     [ProcessPaymentUseCaseProtocol] as PayUseCaseProto
     [CalculateDiscountUseCase]
@@ -29,7 +30,6 @@ package "Domain Layer (Pure Business Logic)" #E8F8F5 {
 }
 
 package "Data Layer" #FEF9E7 {
-    [OrderRepositoryProtocol] as RepoProto
     [OrderRepository]
     [OrderDTO]
 }
@@ -57,6 +57,6 @@ package "Data Layer" #FEF9E7 {
 
 [OrderRepository] ..|> RepoProto
 [OrderRepository] --> [OrderDTO]
-[OrderRepository] --> Order
+[OrderDTO] ..> Order
 
 @enduml

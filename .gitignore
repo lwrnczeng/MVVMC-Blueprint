@@ -1,0 +1,53 @@
+# ==========================================
+# OS & System Metadata
+# ==========================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# ==========================================
+# Swift Package Manager (SPM)
+# ==========================================
+.build/
+Packages/
+Package.resolved
+Package.pins
+.swiftpm/xcode/package.resolved
+.swiftpm/configuration/registries.json
+
+# ==========================================
+# Xcode User Data & Build Products
+# ==========================================
+*.xcuserdatad
+*.xcworkspace/xcuserdata/
+*.xcodeproj/xcuserdata/
+*.xcodeproj/project.xcworkspace/xcuserdata/
+DerivedData/
+build/
+*.build
+
+# ==========================================
+# Fastlane & Tooling Artifacts
+# ==========================================
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/**/*.png
+fastlane/test_output
+
+# ==========================================
+# CocoaPods & Carthage (if applicable)
+# ==========================================
+Pods/
+Carthage/Build/
+Carthage/Checkouts/
+
+# ==========================================
+# Environment & Secrets
+# ==========================================
+.env
+.env.*
+*.secret

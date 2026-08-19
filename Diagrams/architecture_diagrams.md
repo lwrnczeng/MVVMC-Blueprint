@@ -1,11 +1,67 @@
-# MVVM-C Architecture - PlantUML Diagrams
+# MVVM-C Architecture - Dependency & Interaction Diagrams
 
-This document contains PlantUML diagrams (`@startuml` ... `@enduml`) illustrating the layer relationships, detailed class structures, and runtime interaction flows for `MVVMC-Blueprint`.
+This document contains visual diagrams (both **Mermaid** for native Markdown rendering and **PlantUML** for extension previews) illustrating the structural dependencies, protocol abstractions, and runtime navigation flow of the **MVVM-C (Model-View-ViewModel-Coordinator)** architecture implementation in `MVVMC-Blueprint`.
 
 ---
 
-## 1. Clean Architecture Layer Dependency (PlantUML)
+## 1. High-Level Clean Architecture Layer Dependency
 
+The rule of Clean Architecture: **Outer layers depend inward on abstract interfaces; inner domain layers have ZERO knowledge of UI, frameworks, or data persistence.**
+
+### Mermaid Diagram
+```mermaid
+graph TD
+    subgraph UI ["UI Layer (SwiftUI)"]
+        Container["CheckoutContainerView"]
+        InputView["CheckoutInputView"]
+        DiscountView["DiscountView"]
+        PaymentView["PaymentView"]
+    end
+
+    subgraph Presentation ["Presentation & Navigation Layer"]
+        Router["NavigationRouter (@MainActor)"]
+        Coordinator["CheckoutCoordinator"]
+        InputVM["CheckoutInputViewModel"]
+        DiscountVM["DiscountViewModel"]
+        PaymentVM["PaymentViewModel"]
+    end
+
+    subgraph Domain ["Domain Layer (Pure Business Logic & Protocols)"]
+        OrderRepoProtocol["OrderRepositoryProtocol"]
+        CalcUseCase["CalculateDiscountUseCaseProtocol"]
+        PayUseCase["ProcessPaymentUseCaseProtocol"]
+        OrderModel["Order / Discount / PaymentResult Models"]
+    end
+
+    subgraph Data ["Data Layer (Implementations & Storage)"]
+        OrderRepoImpl["OrderRepository"]
+        OrderDTO["OrderDTO"]
+    end
+
+    %% UI -> Presentation & Navigation
+    Container --> Router
+    Container --> Coordinator
+    InputView --> InputVM
+    DiscountView --> DiscountVM
+    PaymentView --> PaymentVM
+
+    %% Presentation -> Coordinator Protocols & Domain
+    Coordinator -.-> Router
+    InputVM -.->|Delegate/Protocol| CoordinatorProtocol["CheckoutCoordinatorProtocol"]
+    DiscountVM -.->|Delegate/Protocol| CoordinatorProtocol
+    PaymentVM -.->|Delegate/Protocol| CoordinatorProtocol
+
+    DiscountVM --> CalcUseCase
+    PaymentVM --> PayUseCase
+
+    %% Domain -> Data Protocol Boundary (Dependency Inversion)
+    PayUseCase --> OrderRepoProtocol
+    OrderRepoImpl ..|> OrderRepoProtocol
+    OrderRepoImpl --> OrderDTO
+    OrderDTO ..> OrderModel
+```
+
+### PlantUML Diagram
 ```plantuml
 @startuml LayerDependencies
 skinparam packageBackgroundColor #F8F9FA
@@ -73,8 +129,132 @@ package "Data Layer" #FEF9E7 {
 
 ---
 
-## 2. Detailed Class & Protocol Diagram (PlantUML)
+## 2. Detailed Class & Protocol Diagram (UML)
 
+This diagram details protocol decoupling, weak delegation, and dependency injection across all components. Notice that **`OrderRepositoryProtocol` is owned by Domain**, returning pure `Order` Domain Models rather than `OrderDTO`.
+
+### Mermaid Diagram
+```mermaid
+classDiagram
+    %% Core Navigation
+    class Coordinator {
+        <<interface>>
+        +childCoordinators: [Coordinator]
+        +start()
+        +addChild(coordinator)
+        +removeChild(coordinator)
+    }
+
+    class NavigationRouter {
+        +path: NavigationPath
+        +push(route)
+        +pop()
+        +popToRoot()
+    }
+
+    class CheckoutCoordinatorProtocol {
+        <<interface>>
+        +showDiscount(for: Order)
+        +showPayment(for: Order, discount: Discount?)
+        +showSuccess(result: PaymentResult)
+        +finishCheckout()
+    }
+
+    class CheckoutCoordinator {
+        +router: NavigationRouter
+        -repository: OrderRepositoryProtocol
+        -calculateDiscountUseCase: CalculateDiscountUseCaseProtocol
+        -processPaymentUseCase: ProcessPaymentUseCaseProtocol
+        +buildView(for: CheckoutRoute) View
+    }
+
+    Coordinator <|-- CheckoutCoordinator
+    CheckoutCoordinatorProtocol <|.. CheckoutCoordinator
+    CheckoutCoordinator --> NavigationRouter
+
+    %% ViewModels
+    class CheckoutInputViewModel {
+        +itemName: String
+        +itemPriceText: String
+        +quantity: Int
+        -coordinator: CheckoutCoordinatorProtocol?
+        +proceedToDiscount()
+    }
+
+    class DiscountViewModel {
+        +order: Order
+        +promoCodeInput: String
+        +appliedDiscount: Discount?
+        -coordinator: CheckoutCoordinatorProtocol?
+        -calculateDiscountUseCase: CalculateDiscountUseCaseProtocol
+        +applyPromoCode()
+        +skipOrProceedToPayment()
+    }
+
+    class PaymentViewModel {
+        +order: Order
+        +discount: Discount?
+        +finalAmount: Decimal
+        -coordinator: CheckoutCoordinatorProtocol?
+        -processPaymentUseCase: ProcessPaymentUseCaseProtocol
+        +processPayment() async
+    }
+
+    CheckoutInputViewModel --> CheckoutCoordinatorProtocol
+    DiscountViewModel --> CheckoutCoordinatorProtocol
+    PaymentViewModel --> CheckoutCoordinatorProtocol
+
+    %% Domain UseCases & Repository Protocols
+    class OrderRepositoryProtocol {
+        <<interface>>
+        +submitOrder(order: Order) async Order
+        +processPayment(orderId: UUID, amount: Decimal) async PaymentResult
+    }
+
+    class CalculateDiscountUseCaseProtocol {
+        <<interface>>
+        +execute(subtotal: Decimal, promoCode: String) Discount
+    }
+
+    class ProcessPaymentUseCaseProtocol {
+        <<interface>>
+        +execute(orderId: UUID, amount: Decimal) async PaymentResult
+    }
+
+    class CalculateDiscountUseCase {
+        +execute(subtotal: Decimal, promoCode: String) Discount
+    }
+
+    class ProcessPaymentUseCase {
+        -repository: OrderRepositoryProtocol
+        +execute(orderId: UUID, amount: Decimal) async PaymentResult
+    }
+
+    CalculateDiscountUseCaseProtocol <|.. CalculateDiscountUseCase
+    ProcessPaymentUseCaseProtocol <|.. ProcessPaymentUseCase
+    DiscountViewModel --> CalculateDiscountUseCaseProtocol
+    PaymentViewModel --> ProcessPaymentUseCaseProtocol
+    ProcessPaymentUseCase --> OrderRepositoryProtocol
+
+    %% Data Layer Implementations
+    class OrderRepository {
+        +submitOrder(order: Order) async Order
+        +processPayment(orderId: UUID, amount: Decimal) async PaymentResult
+    }
+
+    class OrderDTO {
+        +orderId: String
+        +totalAmount: Double
+        +status: String
+        +createdAt: String
+        +toDomain() Order
+    }
+
+    OrderRepositoryProtocol <|.. OrderRepository
+    OrderRepository --> OrderDTO
+```
+
+### PlantUML Diagram
 ```plantuml
 @startuml ClassDiagram
 skinparam classAttributeIconSize 0
@@ -204,8 +384,57 @@ package "Data Layer (Implementation & Storage)" {
 
 ---
 
-## 3. Runtime Sequence Diagram (PlantUML)
+## 3. Runtime Sequence Diagram
 
+This sequence diagram depicts what happens when a user creates an order, applies a promo code, and completes payment.
+
+### Mermaid Diagram
+```mermaid
+sequenceDiagram
+    autonumber
+    actor User
+    participant View as CheckoutInputView
+    participant VM as CheckoutInputViewModel
+    participant Coord as CheckoutCoordinator
+    participant Router as NavigationRouter
+    participant DiscVM as DiscountViewModel
+    participant UseCase as CalculateDiscountUseCase
+    participant PayVM as PaymentViewModel
+    participant PayUseCase as ProcessPaymentUseCase
+    participant Repo as OrderRepository
+
+    User->>View: Enters Item Name & Price, Taps "Continue"
+    View->>VM: proceedToDiscount()
+    VM->>VM: Validates inputs & constructs Order model
+    VM->>Coord: showDiscount(for: order)
+    Coord->>Router: push(.discount(order))
+    Router-->>User: Renders DiscountView
+
+    User->>DiscVM: Enters promo code "SAVE20" & Taps "Apply"
+    DiscVM->>UseCase: execute(subtotal: 50.0, promoCode: "SAVE20")
+    UseCase-->>DiscVM: Returns Discount(code: "SAVE20", amountSaved: 10.0, finalAmount: 40.0)
+    DiscVM-->>User: Updates UI showing discount
+
+    User->>DiscVM: Taps "Proceed to Payment"
+    DiscVM->>Coord: showPayment(for: order, discount: discount)
+    Coord->>Router: push(.payment(order, discount))
+    Router-->>User: Renders PaymentView
+
+    User->>PayVM: Taps "Confirm & Pay Now"
+    PayVM->>PayUseCase: execute(orderId, amount: 40.0)
+    PayUseCase->>Repo: processPayment(orderId, amount)
+    Repo-->>PayUseCase: Returns PaymentResult(txnId: "TXN-1234", status: .success)
+    PayUseCase-->>PayVM: Returns PaymentResult
+    PayVM->>Coord: showSuccess(result: result)
+    Coord->>Router: push(.success(result))
+    Router-->>User: Displays Receipt View
+
+    User->>Coord: Taps "Done"
+    Coord->>Router: popToRoot()
+    Router-->>User: Returns to Checkout Input View
+```
+
+### PlantUML Diagram
 ```plantuml
 @startuml SequenceDiagram
 autonumber

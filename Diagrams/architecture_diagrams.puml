@@ -31,7 +31,14 @@ package "Domain Layer (Pure Business Logic)" #E8F8F5 {
 
 package "Data Layer" #FEF9E7 {
     [OrderRepository]
+    [CheckoutEndpoint]
     [OrderDTO]
+}
+
+package "Core / Infrastructure Layer" #F5EEF8 {
+    [NetworkServiceProtocol] as NetProto
+    [URLSessionNetworkService]
+    [APIEndpoint]
 }
 
 ' Relationships
@@ -56,8 +63,13 @@ package "Data Layer" #FEF9E7 {
 [ProcessPaymentUseCase] --> RepoProto
 
 [OrderRepository] ..|> RepoProto
+[OrderRepository] --> [CheckoutEndpoint]
+[OrderRepository] --> NetProto
 [OrderRepository] --> [OrderDTO]
-[OrderDTO] ..> Order
+[CheckoutEndpoint] ..|> [APIEndpoint]
+
+[URLSessionNetworkService] ..|> NetProto
+[URLSessionNetworkService] --> [APIEndpoint]
 
 @enduml
 
@@ -104,6 +116,32 @@ package "Core Navigation" {
     CheckoutCoordinator --> NavigationRouter
 }
 
+package "Core Networking Infrastructure" {
+    interface APIEndpoint {
+        +baseURL: URL
+        +path: String
+        +method: HTTPMethod
+        +headers: [String: String]?
+        +queryItems: [URLQueryItem]?
+        +body: Data?
+        +urlRequest(): URLRequest
+    }
+
+    interface NetworkServiceProtocol {
+        +request(endpoint: APIEndpoint): T
+        +requestData(endpoint: APIEndpoint): Data
+    }
+
+    class URLSessionNetworkService {
+        -session: URLSession
+        +request(endpoint: APIEndpoint): T
+        +requestData(endpoint: APIEndpoint): Data
+    }
+
+    NetworkServiceProtocol <|.. URLSessionNetworkService
+    URLSessionNetworkService --> APIEndpoint
+}
+
 package "ViewModels" {
     class CheckoutInputViewModel << MainActor >> {
         +itemName: String
@@ -137,7 +175,7 @@ package "ViewModels" {
     PaymentViewModel --> CheckoutCoordinatorProtocol
 }
 
-package "Domain Layer (Owns Entities & Repository Protocols)" {
+package "Domain Layer" {
     interface OrderRepositoryProtocol {
         +submitOrder(order: Order): Order
         +processPayment(orderId: UUID, amount: Decimal): PaymentResult
@@ -169,8 +207,14 @@ package "Domain Layer (Owns Entities & Repository Protocols)" {
 
 package "Data Layer (Implementation & Storage)" {
     class OrderRepository {
+        -networkService: NetworkServiceProtocol
         +submitOrder(order: Order): Order
         +processPayment(orderId: UUID, amount: Decimal): PaymentResult
+    }
+
+    class CheckoutEndpoint {
+        +submitOrder(OrderDTO)
+        +processPayment(UUID, Decimal)
     }
 
     class OrderDTO {
@@ -182,6 +226,9 @@ package "Data Layer (Implementation & Storage)" {
     }
 
     OrderRepositoryProtocol <|.. OrderRepository
+    APIEndpoint <|.. CheckoutEndpoint
+    OrderRepository --> NetworkServiceProtocol
+    OrderRepository --> CheckoutEndpoint
     OrderRepository --> OrderDTO
 }
 @enduml

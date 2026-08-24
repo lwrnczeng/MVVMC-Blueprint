@@ -1,0 +1,13 @@
+
+
+From Notion:
+
+**Free Online REST APIs for Quick Testing**
+
+**JSONPlaceholder**: The most popular mock server for testing. It provides static but structured data for resources like posts, comments, and users. [1]
+
+**ReqRes**: A hosted REST API with functional endpoints supporting full CRUD (Create, Read, Update, Delete) automation flows and simulated response codes. [1, 2]
+
+**Random Data API**: Generates truly randomized data rather than static responses on every refresh. It covers distinct categories like credit cards, banks, addresses, and users. [1]**RandomUser.me**: A dedicated API for generating highly detailed, randomized user profiles, complete with fake names, photos, emails, and addresses. [1]
+
+**DummyJSON**: Offers multi-category placeholder data including products, carts, recipes, and users, making it ideal for e-commerce logic prototyping. [1]

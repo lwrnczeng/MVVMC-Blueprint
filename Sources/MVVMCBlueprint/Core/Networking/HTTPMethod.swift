@@ -1,0 +1,10 @@
+import Foundation
+
+/// Strongly typed HTTP methods conforming to Sendable for Swift concurrency safety.
+public enum HTTPMethod: String, Sendable {
+    case get = "GET"
+    case post = "POST"
+    case put = "PUT"
+    case delete = "DELETE"
+    case patch = "PATCH"
+}

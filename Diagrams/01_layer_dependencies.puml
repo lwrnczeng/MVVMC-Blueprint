@@ -31,7 +31,14 @@ package "Domain Layer (Pure Business Logic)" #E8F8F5 {
 
 package "Data Layer" #FEF9E7 {
     [OrderRepository]
+    [CheckoutEndpoint]
     [OrderDTO]
+}
+
+package "Core / Infrastructure Layer" #F5EEF8 {
+    [NetworkServiceProtocol] as NetProto
+    [URLSessionNetworkService]
+    [APIEndpoint]
 }
 
 ' Relationships
@@ -56,7 +63,12 @@ package "Data Layer" #FEF9E7 {
 [ProcessPaymentUseCase] --> RepoProto
 
 [OrderRepository] ..|> RepoProto
+[OrderRepository] --> [CheckoutEndpoint]
+[OrderRepository] --> NetProto
 [OrderRepository] --> [OrderDTO]
-[OrderDTO] ..> Order
+[CheckoutEndpoint] ..|> [APIEndpoint]
+
+[URLSessionNetworkService] ..|> NetProto
+[URLSessionNetworkService] --> [APIEndpoint]
 
 @enduml

@@ -29,55 +29,65 @@ public final class MockNetworkService: NetworkServiceProtocol, @unchecked Sendab
 
 final class NetworkServiceTests: XCTestCase {
     
-    func testAPIEndpoint_urlRequestGeneration_createsValidRequest() throws {
+    func testAPIEndpoint_urlRequestGeneration_createsValidDummyJSONRequest() throws {
         // Given
-        let dto = OrderDTO(orderId: "12345", totalAmount: 99.9, status: "NEW", createdAt: "2026-08-22")
-        let endpoint = CheckoutEndpoint.submitOrder(dto)
+        let endpoint = CheckoutEndpoint.getCart(id: 1)
         
         // When
         let request = try endpoint.urlRequest()
         
         // Then
-        XCTAssertEqual(request.httpMethod, "POST")
-        XCTAssertEqual(request.url?.absoluteString, "https://api.checkout.example.com/v1/orders")
-        XCTAssertEqual(request.value(forHTTPHeaderField: "Content-Type"), "application/json")
-        XCTAssertNotNil(request.httpBody)
+        XCTAssertEqual(request.httpMethod, "GET")
+        XCTAssertEqual(request.url?.absoluteString, "https://dummyjson.com/carts/1")
+        XCTAssertEqual(request.value(forHTTPHeaderField: "Accept"), "application/json")
     }
     
-    func testMockNetworkService_decodesResponseSuccessfully() async throws {
+    func testMockNetworkService_decodesDummyCartDTOSuccessfully() async throws {
         // Given
         let jsonString = """
         {
-            "orderId": "B8B82633-2F4F-4B8F-8F8D-9E9F00000000",
-            "totalAmount": 150.0,
-            "status": "SUBMITTED",
-            "createdAt": "2026-08-22T00:00:00Z"
+            "id": 1,
+            "products": [
+                {
+                    "id": 162,
+                    "title": "Blue Frock",
+                    "price": 29.99,
+                    "quantity": 4,
+                    "total": 119.96,
+                    "discountPercentage": 12.13,
+                    "discountedTotal": 105.41,
+                    "thumbnail": "https://cdn.dummyjson.com/product-images/tops/blue-frock/thumbnail.webp"
+                }
+            ],
+            "total": 119.96,
+            "discountedTotal": 105.41,
+            "userId": 1,
+            "totalProducts": 1,
+            "totalQuantity": 4
         }
         """
         let mockData = jsonString.data(using: .utf8)!
         let mockNetwork = MockNetworkService(mockResultData: mockData)
         let repository = OrderRepository(networkService: mockNetwork)
         
-        let order = Order(id: UUID(uuidString: "B8B82633-2F4F-4B8F-8F8D-9E9F00000000")!, items: [], subtotal: 150.0)
-        
         // When
-        let resultOrder = try await repository.submitOrder(order)
+        let order = try await repository.fetchCart(id: 1)
         
         // Then
-        XCTAssertEqual(resultOrder.id.uuidString, "B8B82633-2F4F-4B8F-8F8D-9E9F00000000")
-        XCTAssertEqual(resultOrder.subtotal, 150.0)
+        XCTAssertEqual(order.items.count, 1)
+        XCTAssertEqual(order.items.first?.name, "Blue Frock")
+        XCTAssertEqual(order.subtotal, 119.96)
     }
     
-    func testOrderRepository_handlesNetworkError_usesFallbackGracefully() async throws {
+    func testOrderRepository_handlesNetworkError_usesLocalFallbackFixture() async throws {
         // Given
         let mockNetwork = MockNetworkService(mockError: NetworkError.serverError)
         let repository = OrderRepository(networkService: mockNetwork)
-        let order = Order(id: UUID(), items: [], subtotal: 45.0)
         
         // When
-        let resultOrder = try await repository.submitOrder(order)
+        let fallbackOrder = try await repository.fetchCart(id: 1)
         
-        // Then (Fallback handles offline baseline)
-        XCTAssertEqual(resultOrder.subtotal, 45.0)
+        // Then (Fallback loads local fixture)
+        XCTAssertGreaterThan(fallbackOrder.items.count, 0)
     }
 }

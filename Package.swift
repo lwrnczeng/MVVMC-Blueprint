@@ -17,7 +17,10 @@ let package = Package(
     targets: [
         .target(
             name: "MVVMCBlueprint",
-            dependencies: []
+            dependencies: [],
+            resources: [
+                .process("Features/Checkout/Data/MockJson")
+            ]
         ),
         .testTarget(
             name: "MVVMCBlueprintTests",

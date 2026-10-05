@@ -33,9 +33,17 @@ graph TD
         OrderModel["Order / Discount / PaymentResult Models"]
     end
 
-    subgraph Data ["Data Layer (Implementations & Storage)"]
+    subgraph Data ["Data Layer (Adapters & DTOs)"]
         OrderRepoImpl["OrderRepository"]
+        CheckoutEndpoint["CheckoutEndpoint (dummyjson.com)"]
+        DummyCartDTO["DummyCartDTO"]
         OrderDTO["OrderDTO"]
+    end
+
+    subgraph Core ["Core Infrastructure Layer"]
+        NetProto["NetworkServiceProtocol"]
+        URLSessionEngine["URLSessionNetworkService"]
+        APIEndpoint["APIEndpoint"]
     end
 
     %% UI -> Presentation & Navigation
@@ -48,6 +56,7 @@ graph TD
     %% Presentation -> Coordinator Protocols & Domain
     Coordinator -.-> Router
     InputVM -.->|Delegate/Protocol| CoordinatorProtocol["CheckoutCoordinatorProtocol"]
+    InputVM --> OrderRepoProtocol
     DiscountVM -.->|Delegate/Protocol| CoordinatorProtocol
     PaymentVM -.->|Delegate/Protocol| CoordinatorProtocol
 
@@ -57,8 +66,15 @@ graph TD
     %% Domain -> Data Protocol Boundary (Dependency Inversion)
     PayUseCase --> OrderRepoProtocol
     OrderRepoImpl ..|> OrderRepoProtocol
+    OrderRepoImpl --> CheckoutEndpoint
+    OrderRepoImpl --> NetProto
+    OrderRepoImpl --> DummyCartDTO
     OrderRepoImpl --> OrderDTO
-    OrderDTO ..> OrderModel
+    CheckoutEndpoint ..|> APIEndpoint
+    DummyCartDTO ..> OrderModel
+
+    URLSessionEngine ..|> NetProto
+    URLSessionEngine --> APIEndpoint
 ```
 
 ### PlantUML Diagram
@@ -83,7 +99,7 @@ package "Presentation & Navigation Layer" #F3E9F8 {
     [PaymentViewModel]
 }
 
-package "Domain Layer (Pure Business Logic)" #E8F8F5 {
+package "Domain Layer (Pure Business Logic & Protocols)" #E8F8F5 {
     [OrderRepositoryProtocol] as RepoProto
     [CalculateDiscountUseCaseProtocol] as CalcUseCaseProto
     [ProcessPaymentUseCaseProtocol] as PayUseCaseProto
@@ -94,9 +110,17 @@ package "Domain Layer (Pure Business Logic)" #E8F8F5 {
     [PaymentResult Model] as PaymentResult
 }
 
-package "Data Layer" #FEF9E7 {
+package "Data Layer (Adapters & DTOs)" #FEF9E7 {
     [OrderRepository]
+    [CheckoutEndpoint]
+    [DummyCartDTO]
     [OrderDTO]
+}
+
+package "Core / Infrastructure Layer" #F5EEF8 {
+    [NetworkServiceProtocol] as NetProto
+    [URLSessionNetworkService]
+    [APIEndpoint]
 }
 
 ' Relationships
@@ -107,6 +131,7 @@ package "Data Layer" #FEF9E7 {
 [PaymentView] --> [PaymentViewModel]
 
 [CheckoutInputViewModel] ..> CoordProto
+[CheckoutInputViewModel] --> RepoProto
 [DiscountViewModel] ..> CoordProto
 [PaymentViewModel] ..> CoordProto
 
@@ -121,8 +146,15 @@ package "Data Layer" #FEF9E7 {
 [ProcessPaymentUseCase] --> RepoProto
 
 [OrderRepository] ..|> RepoProto
+[OrderRepository] --> [CheckoutEndpoint]
+[OrderRepository] --> NetProto
+[OrderRepository] --> [DummyCartDTO]
 [OrderRepository] --> [OrderDTO]
-[OrderDTO] ..> Order
+[CheckoutEndpoint] ..|> [APIEndpoint]
+[DummyCartDTO] ..> Order
+
+[URLSessionNetworkService] ..|> NetProto
+[URLSessionNetworkService] --> [APIEndpoint]
 
 @enduml
 ```
@@ -131,128 +163,7 @@ package "Data Layer" #FEF9E7 {
 
 ## 2. Detailed Class & Protocol Diagram (UML)
 
-This diagram details protocol decoupling, weak delegation, and dependency injection across all components. Notice that **`OrderRepositoryProtocol` is owned by Domain**, returning pure `Order` Domain Models rather than `OrderDTO`.
-
-### Mermaid Diagram
-```mermaid
-classDiagram
-    %% Core Navigation
-    class Coordinator {
-        <<interface>>
-        +childCoordinators: [Coordinator]
-        +start()
-        +addChild(coordinator)
-        +removeChild(coordinator)
-    }
-
-    class NavigationRouter {
-        +path: NavigationPath
-        +push(route)
-        +pop()
-        +popToRoot()
-    }
-
-    class CheckoutCoordinatorProtocol {
-        <<interface>>
-        +showDiscount(for: Order)
-        +showPayment(for: Order, discount: Discount?)
-        +showSuccess(result: PaymentResult)
-        +finishCheckout()
-    }
-
-    class CheckoutCoordinator {
-        +router: NavigationRouter
-        -repository: OrderRepositoryProtocol
-        -calculateDiscountUseCase: CalculateDiscountUseCaseProtocol
-        -processPaymentUseCase: ProcessPaymentUseCaseProtocol
-        +buildView(for: CheckoutRoute) View
-    }
-
-    Coordinator <|-- CheckoutCoordinator
-    CheckoutCoordinatorProtocol <|.. CheckoutCoordinator
-    CheckoutCoordinator --> NavigationRouter
-
-    %% ViewModels
-    class CheckoutInputViewModel {
-        +itemName: String
-        +itemPriceText: String
-        +quantity: Int
-        -coordinator: CheckoutCoordinatorProtocol?
-        +proceedToDiscount()
-    }
-
-    class DiscountViewModel {
-        +order: Order
-        +promoCodeInput: String
-        +appliedDiscount: Discount?
-        -coordinator: CheckoutCoordinatorProtocol?
-        -calculateDiscountUseCase: CalculateDiscountUseCaseProtocol
-        +applyPromoCode()
-        +skipOrProceedToPayment()
-    }
-
-    class PaymentViewModel {
-        +order: Order
-        +discount: Discount?
-        +finalAmount: Decimal
-        -coordinator: CheckoutCoordinatorProtocol?
-        -processPaymentUseCase: ProcessPaymentUseCaseProtocol
-        +processPayment() async
-    }
-
-    CheckoutInputViewModel --> CheckoutCoordinatorProtocol
-    DiscountViewModel --> CheckoutCoordinatorProtocol
-    PaymentViewModel --> CheckoutCoordinatorProtocol
-
-    %% Domain UseCases & Repository Protocols
-    class OrderRepositoryProtocol {
-        <<interface>>
-        +submitOrder(order: Order) async Order
-        +processPayment(orderId: UUID, amount: Decimal) async PaymentResult
-    }
-
-    class CalculateDiscountUseCaseProtocol {
-        <<interface>>
-        +execute(subtotal: Decimal, promoCode: String) Discount
-    }
-
-    class ProcessPaymentUseCaseProtocol {
-        <<interface>>
-        +execute(orderId: UUID, amount: Decimal) async PaymentResult
-    }
-
-    class CalculateDiscountUseCase {
-        +execute(subtotal: Decimal, promoCode: String) Discount
-    }
-
-    class ProcessPaymentUseCase {
-        -repository: OrderRepositoryProtocol
-        +execute(orderId: UUID, amount: Decimal) async PaymentResult
-    }
-
-    CalculateDiscountUseCaseProtocol <|.. CalculateDiscountUseCase
-    ProcessPaymentUseCaseProtocol <|.. ProcessPaymentUseCase
-    DiscountViewModel --> CalculateDiscountUseCaseProtocol
-    PaymentViewModel --> ProcessPaymentUseCaseProtocol
-    ProcessPaymentUseCase --> OrderRepositoryProtocol
-
-    %% Data Layer Implementations
-    class OrderRepository {
-        +submitOrder(order: Order) async Order
-        +processPayment(orderId: UUID, amount: Decimal) async PaymentResult
-    }
-
-    class OrderDTO {
-        +orderId: String
-        +totalAmount: Double
-        +status: String
-        +createdAt: String
-        +toDomain() Order
-    }
-
-    OrderRepositoryProtocol <|.. OrderRepository
-    OrderRepository --> OrderDTO
-```
+This diagram details protocol decoupling, weak delegation, and dependency injection across all components. Notice that **`OrderRepositoryProtocol` is owned by Domain**, returning pure `Order` Domain Models rather than DTOs.
 
 ### PlantUML Diagram
 ```plantuml
@@ -293,10 +204,29 @@ package "Core Navigation" {
         -processPaymentUseCase: ProcessPaymentUseCaseProtocol
         +buildView(for route: CheckoutRoute): View
     }
+}
 
-    Coordinator <|.. CheckoutCoordinator
-    CheckoutCoordinatorProtocol <|.. CheckoutCoordinator
-    CheckoutCoordinator --> NavigationRouter
+package "Core Networking Infrastructure" {
+    interface APIEndpoint {
+        +baseURL: URL
+        +path: String
+        +method: HTTPMethod
+        +headers: [String: String]?
+        +queryItems: [URLQueryItem]?
+        +body: Data?
+        +urlRequest(): URLRequest
+    }
+
+    interface NetworkServiceProtocol {
+        +request(endpoint: APIEndpoint): T
+        +requestData(endpoint: APIEndpoint): Data
+    }
+
+    class URLSessionNetworkService {
+        -session: URLSession
+        +request(endpoint: APIEndpoint): T
+        +requestData(endpoint: APIEndpoint): Data
+    }
 }
 
 package "ViewModels" {
@@ -304,7 +234,10 @@ package "ViewModels" {
         +itemName: String
         +itemPriceText: String
         +quantity: Int
+        +isLoadingCart: Bool
         -coordinator: CheckoutCoordinatorProtocol
+        -repository: OrderRepositoryProtocol
+        +fetchDummyCart(id: Int) async
         +proceedToDiscount()
     }
 
@@ -326,14 +259,11 @@ package "ViewModels" {
         -processPaymentUseCase: ProcessPaymentUseCaseProtocol
         +processPayment() async
     }
-
-    CheckoutInputViewModel --> CheckoutCoordinatorProtocol
-    DiscountViewModel --> CheckoutCoordinatorProtocol
-    PaymentViewModel --> CheckoutCoordinatorProtocol
 }
 
-package "Domain Layer (Owns Entities & Repository Protocols)" {
+package "Domain Layer (Pure Business Logic & Interfaces)" {
     interface OrderRepositoryProtocol {
+        +fetchCart(id: Int): Order
         +submitOrder(order: Order): Order
         +processPayment(orderId: UUID, amount: Decimal): PaymentResult
     }
@@ -354,18 +284,30 @@ package "Domain Layer (Owns Entities & Repository Protocols)" {
         -repository: OrderRepositoryProtocol
         +execute(orderId: UUID, amount: Decimal): PaymentResult
     }
-
-    CalculateDiscountUseCaseProtocol <|.. CalculateDiscountUseCase
-    ProcessPaymentUseCaseProtocol <|.. ProcessPaymentUseCase
-    DiscountViewModel --> CalculateDiscountUseCaseProtocol
-    PaymentViewModel --> ProcessPaymentUseCaseProtocol
-    ProcessPaymentUseCase --> OrderRepositoryProtocol
 }
 
-package "Data Layer (Implementation & Storage)" {
+package "Data Layer (Implementation & Adapters)" {
     class OrderRepository {
+        -networkService: NetworkServiceProtocol
+        +fetchCart(id: Int): Order
         +submitOrder(order: Order): Order
         +processPayment(orderId: UUID, amount: Decimal): PaymentResult
+    }
+
+    class CheckoutEndpoint {
+        +getCart(id: Int)
+        +getCarts
+        +addCart(userId: Int, products)
+        +processPayment(UUID, Decimal)
+    }
+
+    class DummyCartDTO {
+        +id: Int
+        +products: [DummyCartProductDTO]
+        +total: Double
+        +discountedTotal: Double
+        +userId: Int
+        +toDomain(): Order
     }
 
     class OrderDTO {
@@ -375,64 +317,40 @@ package "Data Layer (Implementation & Storage)" {
         +createdAt: String
         +toDomain(): Order
     }
-
-    OrderRepositoryProtocol <|.. OrderRepository
-    OrderRepository --> OrderDTO
 }
+
+' Relationships & Invocations (Declared outside packages to prevent visual duplication)
+Coordinator <|.. CheckoutCoordinator
+CheckoutCoordinatorProtocol <|.. CheckoutCoordinator
+CheckoutCoordinator --> NavigationRouter
+
+NetworkServiceProtocol <|.. URLSessionNetworkService
+URLSessionNetworkService --> APIEndpoint
+
+CheckoutInputViewModel --> CheckoutCoordinatorProtocol
+CheckoutInputViewModel --> OrderRepositoryProtocol
+DiscountViewModel --> CheckoutCoordinatorProtocol
+PaymentViewModel --> CheckoutCoordinatorProtocol
+
+CalculateDiscountUseCaseProtocol <|.. CalculateDiscountUseCase
+ProcessPaymentUseCaseProtocol <|.. ProcessPaymentUseCase
+DiscountViewModel --> CalculateDiscountUseCaseProtocol
+PaymentViewModel --> ProcessPaymentUseCaseProtocol
+ProcessPaymentUseCase --> OrderRepositoryProtocol
+
+OrderRepositoryProtocol <|.. OrderRepository
+APIEndpoint <|.. CheckoutEndpoint
+OrderRepository --> NetworkServiceProtocol
+OrderRepository --> CheckoutEndpoint
+OrderRepository --> DummyCartDTO
+OrderRepository --> OrderDTO
+
 @enduml
 ```
 
 ---
 
 ## 3. Runtime Sequence Diagram
-
-This sequence diagram depicts what happens when a user creates an order, applies a promo code, and completes payment.
-
-### Mermaid Diagram
-```mermaid
-sequenceDiagram
-    autonumber
-    actor User
-    participant View as CheckoutInputView
-    participant VM as CheckoutInputViewModel
-    participant Coord as CheckoutCoordinator
-    participant Router as NavigationRouter
-    participant DiscVM as DiscountViewModel
-    participant UseCase as CalculateDiscountUseCase
-    participant PayVM as PaymentViewModel
-    participant PayUseCase as ProcessPaymentUseCase
-    participant Repo as OrderRepository
-
-    User->>View: Enters Item Name & Price, Taps "Continue"
-    View->>VM: proceedToDiscount()
-    VM->>VM: Validates inputs & constructs Order model
-    VM->>Coord: showDiscount(for: order)
-    Coord->>Router: push(.discount(order))
-    Router-->>User: Renders DiscountView
-
-    User->>DiscVM: Enters promo code "SAVE20" & Taps "Apply"
-    DiscVM->>UseCase: execute(subtotal: 50.0, promoCode: "SAVE20")
-    UseCase-->>DiscVM: Returns Discount(code: "SAVE20", amountSaved: 10.0, finalAmount: 40.0)
-    DiscVM-->>User: Updates UI showing discount
-
-    User->>DiscVM: Taps "Proceed to Payment"
-    DiscVM->>Coord: showPayment(for: order, discount: discount)
-    Coord->>Router: push(.payment(order, discount))
-    Router-->>User: Renders PaymentView
-
-    User->>PayVM: Taps "Confirm & Pay Now"
-    PayVM->>PayUseCase: execute(orderId, amount: 40.0)
-    PayUseCase->>Repo: processPayment(orderId, amount)
-    Repo-->>PayUseCase: Returns PaymentResult(txnId: "TXN-1234", status: .success)
-    PayUseCase-->>PayVM: Returns PaymentResult
-    PayVM->>Coord: showSuccess(result: result)
-    Coord->>Router: push(.success(result))
-    Router-->>User: Displays Receipt View
-
-    User->>Coord: Taps "Done"
-    Coord->>Router: popToRoot()
-    Router-->>User: Returns to Checkout Input View
-```
 
 ### PlantUML Diagram
 ```plantuml
@@ -441,30 +359,48 @@ autonumber
 actor User
 participant CheckoutInputView as View
 participant CheckoutInputViewModel as VM
+participant OrderRepository as Repo
+participant NetworkService as NetService
 participant CheckoutCoordinator as Coord
 participant NavigationRouter as Router
 participant DiscountViewModel as DiscVM
 participant CalculateDiscountUseCase as UseCase
 participant PaymentViewModel as PayVM
 participant ProcessPaymentUseCase as PayUseCase
-participant OrderRepository as Repo
 
-User -> View: Enters Item Name & Price, Taps "Continue"
-View -> VM: proceedToDiscount()
-activate VM
-VM -> VM: Validate inputs & create Order
-VM -> Coord: showDiscount(for: order)
-deactivate VM
+alt Option A: Fetch Live Sample Cart from DummyJSON API
+    User -> View: Taps "Fetch Sample Cart (dummyjson.com/carts/1)"
+    View -> VM: fetchDummyCart(id: 1)
+    activate VM
+    VM -> Repo: fetchCart(id: 1)
+    activate Repo
+    Repo -> NetService: request(CheckoutEndpoint.getCart(id: 1))
+    activate NetService
+    NetService --> Repo: Returns DummyCartDTO (products: Blue Frock, iPhone 6, etc.)
+    deactivate NetService
+    Repo --> VM: Returns mapped Domain Order
+    deactivate Repo
+    VM -> Coord: showDiscount(for: order)
+    deactivate VM
+else Option B: Manual Input Order Creation
+    User -> View: Enters Item Name & Price, Taps "Continue"
+    View -> VM: proceedToDiscount()
+    activate VM
+    VM -> VM: Validate inputs & create Order
+    VM -> Coord: showDiscount(for: order)
+    deactivate VM
+end
+
 activate Coord
 Coord -> Router: push(.discount(order))
-Router --> User: Displays DiscountView
+Router --> User: Displays DiscountView with items list & total
 deactivate Coord
 
 User -> DiscVM: Enters promo code "SAVE20" & Taps "Apply"
 activate DiscVM
-DiscVM -> UseCase: execute(subtotal: 50.0, promoCode: "SAVE20")
+DiscVM -> UseCase: execute(subtotal, promoCode: "SAVE20")
 activate UseCase
-UseCase --> DiscVM: Returns Discount(code: "SAVE20", amountSaved: 10.0, finalAmount: 40.0)
+UseCase --> DiscVM: Returns Discount(code: "SAVE20", amountSaved, finalAmount)
 deactivate UseCase
 DiscVM --> User: Updates UI with discount
 deactivate DiscVM
@@ -480,10 +416,14 @@ deactivate Coord
 
 User -> PayVM: Taps "Confirm & Pay Now"
 activate PayVM
-PayVM -> PayUseCase: execute(orderId, amount: 40.0)
+PayVM -> PayUseCase: execute(orderId, amount)
 activate PayUseCase
 PayUseCase -> Repo: processPayment(orderId, amount)
 activate Repo
+Repo -> NetService: request(CheckoutEndpoint.processPayment)
+activate NetService
+NetService --> Repo: Returns HTTP 200 / Payment response
+deactivate NetService
 Repo --> PayUseCase: Returns PaymentResult(txnId: "TXN-1234", status: .success)
 deactivate Repo
 PayUseCase --> PayVM: Returns PaymentResult

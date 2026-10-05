@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		DE53EA46303D403C0061E61B /* ZafinAIAgentBlueprint in Frameworks */ = {isa = PBXBuildFile; productRef = DE53EA45303D403C0061E61B /* ZafinAIAgentBlueprint */; };
 		DECFA90B302E327300872733 /* MVVMCBlueprint in Frameworks */ = {isa = PBXBuildFile; productRef = DECFA90A302E327300872733 /* MVVMCBlueprint */; };
 /* End PBXBuildFile section */
 
@@ -57,6 +58,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				DECFA90B302E327300872733 /* MVVMCBlueprint in Frameworks */,
+				DE53EA46303D403C0061E61B /* ZafinAIAgentBlueprint in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -118,6 +120,7 @@
 			name = MVVMCApp;
 			packageProductDependencies = (
 				DECFA90A302E327300872733 /* MVVMCBlueprint */,
+				DE53EA45303D403C0061E61B /* ZafinAIAgentBlueprint */,
 			);
 			productName = MVVMCApp;
 			productReference = DECFA8DD302E31F600872733 /* MVVMCApp.app */;
@@ -203,6 +206,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				DECFA909302E327300872733 /* XCLocalSwiftPackageReference "../../MVVMC-Blueprint" */,
+				DE53EA44303D403C0061E61B /* XCLocalSwiftPackageReference "../../Zafin-AIAgent-Blueprint" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = DECFA8DE302E31F600872733 /* Products */;
@@ -589,6 +593,10 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
+		DE53EA44303D403C0061E61B /* XCLocalSwiftPackageReference "../../Zafin-AIAgent-Blueprint" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = "../../Zafin-AIAgent-Blueprint";
+		};
 		DECFA909302E327300872733 /* XCLocalSwiftPackageReference "../../MVVMC-Blueprint" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = "../../MVVMC-Blueprint";
@@ -596,6 +604,10 @@
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		DE53EA45303D403C0061E61B /* ZafinAIAgentBlueprint */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = ZafinAIAgentBlueprint;
+		};
 		DECFA90A302E327300872733 /* MVVMCBlueprint */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = MVVMCBlueprint;

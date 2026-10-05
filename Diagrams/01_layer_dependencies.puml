@@ -29,9 +29,10 @@ package "Domain Layer (Pure Business Logic)" #E8F8F5 {
     [PaymentResult Model] as PaymentResult
 }
 
-package "Data Layer" #FEF9E7 {
+package "Data Layer (Adapters & DTOs)" #FEF9E7 {
     [OrderRepository]
     [CheckoutEndpoint]
+    [DummyCartDTO]
     [OrderDTO]
 }
 
@@ -49,6 +50,7 @@ package "Core / Infrastructure Layer" #F5EEF8 {
 [PaymentView] --> [PaymentViewModel]
 
 [CheckoutInputViewModel] ..> CoordProto
+[CheckoutInputViewModel] --> RepoProto
 [DiscountViewModel] ..> CoordProto
 [PaymentViewModel] ..> CoordProto
 
@@ -65,8 +67,10 @@ package "Core / Infrastructure Layer" #F5EEF8 {
 [OrderRepository] ..|> RepoProto
 [OrderRepository] --> [CheckoutEndpoint]
 [OrderRepository] --> NetProto
+[OrderRepository] --> [DummyCartDTO]
 [OrderRepository] --> [OrderDTO]
 [CheckoutEndpoint] ..|> [APIEndpoint]
+[DummyCartDTO] ..> Order
 
 [URLSessionNetworkService] ..|> NetProto
 [URLSessionNetworkService] --> [APIEndpoint]

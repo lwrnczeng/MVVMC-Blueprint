@@ -3,30 +3,48 @@ autonumber
 actor User
 participant CheckoutInputView as View
 participant CheckoutInputViewModel as VM
+participant OrderRepository as Repo
+participant NetworkService as NetService
 participant CheckoutCoordinator as Coord
 participant NavigationRouter as Router
 participant DiscountViewModel as DiscVM
 participant CalculateDiscountUseCase as UseCase
 participant PaymentViewModel as PayVM
 participant ProcessPaymentUseCase as PayUseCase
-participant OrderRepository as Repo
 
-User -> View: Enters Item Name & Price, Taps "Continue"
-View -> VM: proceedToDiscount()
-activate VM
-VM -> VM: Validate inputs & create Order
-VM -> Coord: showDiscount(for: order)
-deactivate VM
+alt Option A: Fetch Live Sample Cart from DummyJSON API
+    User -> View: Taps "Fetch Sample Cart (dummyjson.com/carts/1)"
+    View -> VM: fetchDummyCart(id: 1)
+    activate VM
+    VM -> Repo: fetchCart(id: 1)
+    activate Repo
+    Repo -> NetService: request(CheckoutEndpoint.getCart(id: 1))
+    activate NetService
+    NetService --> Repo: Returns DummyCartDTO (products: Blue Frock, iPhone 6, etc.)
+    deactivate NetService
+    Repo --> VM: Returns mapped Domain Order
+    deactivate Repo
+    VM -> Coord: showDiscount(for: order)
+    deactivate VM
+else Option B: Manual Input Order Creation
+    User -> View: Enters Item Name & Price, Taps "Continue"
+    View -> VM: proceedToDiscount()
+    activate VM
+    VM -> VM: Validate inputs & create Order
+    VM -> Coord: showDiscount(for: order)
+    deactivate VM
+end
+
 activate Coord
 Coord -> Router: push(.discount(order))
-Router --> User: Displays DiscountView
+Router --> User: Displays DiscountView with items list & total
 deactivate Coord
 
 User -> DiscVM: Enters promo code "SAVE20" & Taps "Apply"
 activate DiscVM
-DiscVM -> UseCase: execute(subtotal: 50.0, promoCode: "SAVE20")
+DiscVM -> UseCase: execute(subtotal, promoCode: "SAVE20")
 activate UseCase
-UseCase --> DiscVM: Returns Discount(code: "SAVE20", amountSaved: 10.0, finalAmount: 40.0)
+UseCase --> DiscVM: Returns Discount(code: "SAVE20", amountSaved, finalAmount)
 deactivate UseCase
 DiscVM --> User: Updates UI with discount
 deactivate DiscVM
@@ -42,10 +60,14 @@ deactivate Coord
 
 User -> PayVM: Taps "Confirm & Pay Now"
 activate PayVM
-PayVM -> PayUseCase: execute(orderId, amount: 40.0)
+PayVM -> PayUseCase: execute(orderId, amount)
 activate PayUseCase
 PayUseCase -> Repo: processPayment(orderId, amount)
 activate Repo
+Repo -> NetService: request(CheckoutEndpoint.processPayment)
+activate NetService
+NetService --> Repo: Returns HTTP 200 / Payment response
+deactivate NetService
 Repo --> PayUseCase: Returns PaymentResult(txnId: "TXN-1234", status: .success)
 deactivate Repo
 PayUseCase --> PayVM: Returns PaymentResult

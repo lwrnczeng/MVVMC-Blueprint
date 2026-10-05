@@ -1,18 +1,39 @@
 import Foundation
 import Combine
 
-/// Presentation logic and state management for creating an initial order.
+/// Presentation logic and state management for creating or fetching an order.
 @MainActor
 public final class CheckoutInputViewModel: ObservableObject {
     @Published public var itemName: String = ""
     @Published public var itemPriceText: String = ""
     @Published public var quantity: Int = 1
+    @Published public var isLoadingCart: Bool = false
     @Published public var errorMessage: String?
     
     private weak var coordinator: CheckoutCoordinatorProtocol?
+    private let repository: OrderRepositoryProtocol
     
-    public init(coordinator: CheckoutCoordinatorProtocol) {
+    public init(
+        coordinator: CheckoutCoordinatorProtocol,
+        repository: OrderRepositoryProtocol = OrderRepository()
+    ) {
         self.coordinator = coordinator
+        self.repository = repository
+    }
+    
+    /// Fetches a live sample cart from DummyJSON REST API (https://dummyjson.com/carts/1)
+    public func fetchDummyCart(id: Int = 1) async {
+        isLoadingCart = true
+        errorMessage = nil
+        
+        do {
+            let fetchedOrder = try await repository.fetchCart(id: id)
+            isLoadingCart = false
+            coordinator?.showDiscount(for: fetchedOrder)
+        } catch {
+            isLoadingCart = false
+            errorMessage = "Failed to fetch DummyJSON cart: \(error.localizedDescription)"
+        }
     }
     
     public func proceedToDiscount() {

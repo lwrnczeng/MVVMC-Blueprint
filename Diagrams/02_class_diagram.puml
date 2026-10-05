@@ -35,10 +35,6 @@ package "Core Navigation" {
         -processPaymentUseCase: ProcessPaymentUseCaseProtocol
         +buildView(for route: CheckoutRoute): View
     }
-
-    Coordinator <|.. CheckoutCoordinator
-    CheckoutCoordinatorProtocol <|.. CheckoutCoordinator
-    CheckoutCoordinator --> NavigationRouter
 }
 
 package "Core Networking Infrastructure" {
@@ -62,9 +58,6 @@ package "Core Networking Infrastructure" {
         +request(endpoint: APIEndpoint): T
         +requestData(endpoint: APIEndpoint): Data
     }
-
-    NetworkServiceProtocol <|.. URLSessionNetworkService
-    URLSessionNetworkService --> APIEndpoint
 }
 
 package "ViewModels" {
@@ -72,7 +65,10 @@ package "ViewModels" {
         +itemName: String
         +itemPriceText: String
         +quantity: Int
+        +isLoadingCart: Bool
         -coordinator: CheckoutCoordinatorProtocol
+        -repository: OrderRepositoryProtocol
+        +fetchDummyCart(id: Int) async
         +proceedToDiscount()
     }
 
@@ -94,14 +90,11 @@ package "ViewModels" {
         -processPaymentUseCase: ProcessPaymentUseCaseProtocol
         +processPayment() async
     }
-
-    CheckoutInputViewModel --> CheckoutCoordinatorProtocol
-    DiscountViewModel --> CheckoutCoordinatorProtocol
-    PaymentViewModel --> CheckoutCoordinatorProtocol
 }
 
-package "Domain Layer" {
+package "Domain Layer (Pure Business Logic & Interfaces)" {
     interface OrderRepositoryProtocol {
+        +fetchCart(id: Int): Order
         +submitOrder(order: Order): Order
         +processPayment(orderId: UUID, amount: Decimal): PaymentResult
     }
@@ -122,24 +115,30 @@ package "Domain Layer" {
         -repository: OrderRepositoryProtocol
         +execute(orderId: UUID, amount: Decimal): PaymentResult
     }
-
-    CalculateDiscountUseCaseProtocol <|.. CalculateDiscountUseCase
-    ProcessPaymentUseCaseProtocol <|.. ProcessPaymentUseCase
-    DiscountViewModel --> CalculateDiscountUseCaseProtocol
-    PaymentViewModel --> ProcessPaymentUseCaseProtocol
-    ProcessPaymentUseCase --> OrderRepositoryProtocol
 }
 
-package "Data Layer (Implementation & Storage)" {
+package "Data Layer (Implementation & Adapters)" {
     class OrderRepository {
         -networkService: NetworkServiceProtocol
+        +fetchCart(id: Int): Order
         +submitOrder(order: Order): Order
         +processPayment(orderId: UUID, amount: Decimal): PaymentResult
     }
 
     class CheckoutEndpoint {
-        +submitOrder(OrderDTO)
+        +getCart(id: Int)
+        +getCarts
+        +addCart(userId: Int, products)
         +processPayment(UUID, Decimal)
+    }
+
+    class DummyCartDTO {
+        +id: Int
+        +products: [DummyCartProductDTO]
+        +total: Double
+        +discountedTotal: Double
+        +userId: Int
+        +toDomain(): Order
     }
 
     class OrderDTO {
@@ -149,11 +148,32 @@ package "Data Layer (Implementation & Storage)" {
         +createdAt: String
         +toDomain(): Order
     }
-
-    OrderRepositoryProtocol <|.. OrderRepository
-    APIEndpoint <|.. CheckoutEndpoint
-    OrderRepository --> NetworkServiceProtocol
-    OrderRepository --> CheckoutEndpoint
-    OrderRepository --> OrderDTO
 }
+
+' Relationships & Invocations (Declared outside packages to prevent visual duplication)
+Coordinator <|.. CheckoutCoordinator
+CheckoutCoordinatorProtocol <|.. CheckoutCoordinator
+CheckoutCoordinator --> NavigationRouter
+
+NetworkServiceProtocol <|.. URLSessionNetworkService
+URLSessionNetworkService --> APIEndpoint
+
+CheckoutInputViewModel --> CheckoutCoordinatorProtocol
+CheckoutInputViewModel --> OrderRepositoryProtocol
+DiscountViewModel --> CheckoutCoordinatorProtocol
+PaymentViewModel --> CheckoutCoordinatorProtocol
+
+CalculateDiscountUseCaseProtocol <|.. CalculateDiscountUseCase
+ProcessPaymentUseCaseProtocol <|.. ProcessPaymentUseCase
+DiscountViewModel --> CalculateDiscountUseCaseProtocol
+PaymentViewModel --> ProcessPaymentUseCaseProtocol
+ProcessPaymentUseCase --> OrderRepositoryProtocol
+
+OrderRepositoryProtocol <|.. OrderRepository
+APIEndpoint <|.. CheckoutEndpoint
+OrderRepository --> NetworkServiceProtocol
+OrderRepository --> CheckoutEndpoint
+OrderRepository --> DummyCartDTO
+OrderRepository --> OrderDTO
+
 @enduml

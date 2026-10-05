@@ -36,7 +36,9 @@ final class CheckoutInputViewModelTests: XCTestCase {
     override func setUp() {
         super.setUp()
         mockCoordinator = MockCheckoutCoordinator()
-        sut = CheckoutInputViewModel(coordinator: mockCoordinator)
+        let mockNetwork = MockNetworkService(mockError: NetworkError.serverError)
+        let repository = OrderRepository(networkService: mockNetwork)
+        sut = CheckoutInputViewModel(coordinator: mockCoordinator, repository: repository)
     }
     
     override func tearDown() {
@@ -84,5 +86,15 @@ final class CheckoutInputViewModelTests: XCTestCase {
         // Then
         XCTAssertFalse(mockCoordinator.showDiscountCalled)
         XCTAssertNotNil(sut.errorMessage)
+    }
+    
+    func testFetchDummyCart_triggersCoordinatorShowDiscountWithOrder() async {
+        // When
+        await sut.fetchDummyCart(id: 1)
+        
+        // Then
+        XCTAssertTrue(mockCoordinator.showDiscountCalled)
+        XCTAssertNotNil(mockCoordinator.lastOrder)
+        XCTAssertFalse(sut.isLoadingCart)
     }
 }

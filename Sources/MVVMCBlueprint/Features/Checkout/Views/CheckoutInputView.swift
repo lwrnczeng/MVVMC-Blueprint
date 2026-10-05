@@ -9,7 +9,29 @@ public struct CheckoutInputView: View {
     
     public var body: some View {
         Form {
-            Section(header: Text("New Order Details")) {
+            Section(header: Text("Live Remote API Data Demo")) {
+                Button(action: {
+                    Task {
+                        await viewModel.fetchDummyCart(id: 1)
+                    }
+                }) {
+                    HStack {
+                        if viewModel.isLoadingCart {
+                            ProgressView()
+                                .padding(.trailing, 8)
+                        } else {
+                            Image(systemName: "cart.fill.badge.plus")
+                                .foregroundColor(.blue)
+                        }
+                        Text(viewModel.isLoadingCart ? "Loading DummyJSON Cart..." : "Fetch Sample Cart (dummyjson.com/carts/1)")
+                            .bold()
+                            .foregroundColor(.blue)
+                    }
+                }
+                .disabled(viewModel.isLoadingCart)
+            }
+            
+            Section(header: Text("Or Create Custom Item")) {
                 TextField("Item Name (e.g. Swift Architecture Book)", text: $viewModel.itemName)
                 
                 TextField("Price per item (USD)", text: $viewModel.itemPriceText)

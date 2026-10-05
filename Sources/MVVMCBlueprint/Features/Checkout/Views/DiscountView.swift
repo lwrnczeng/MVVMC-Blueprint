@@ -10,11 +10,24 @@ public struct DiscountView: View {
     public var body: some View {
         VStack(spacing: 20) {
             VStack(alignment: .leading, spacing: 10) {
-                Text("Order Summary")
+                Text("Order Summary (\(viewModel.order.items.count) Items)")
                     .font(.headline)
+                
+                ForEach(viewModel.order.items) { item in
+                    HStack {
+                        Text("\(item.name) (x\(item.quantity))")
+                            .font(.subheadline)
+                        Spacer()
+                        Text("$\(NSDecimalNumber(decimal: item.price * Decimal(item.quantity)).stringValue)")
+                            .font(.subheadline)
+                    }
+                }
+                
+                Divider()
                 
                 HStack {
                     Text("Subtotal:")
+                        .bold()
                     Spacer()
                     Text("$\(NSDecimalNumber(decimal: viewModel.order.subtotal).stringValue)")
                         .bold()

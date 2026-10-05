@@ -8,6 +8,7 @@
 import SwiftUI
 import SwiftData
 import MVVMCBlueprint
+import ZafinAIAgentBlueprint
 
 @main
 struct MVVMCAppApp: App {
@@ -26,8 +27,26 @@ struct MVVMCAppApp: App {
 
     var body: some Scene {
         WindowGroup {
-            CheckoutContainerView()//ContentView()
+            MainDemoContainerView()
         }
         .modelContainer(sharedModelContainer)
+    }
+}
+
+struct MainDemoContainerView: View {
+    var body: some View {
+        TabView {
+            ZafinAIAgentChatView()
+                .tabItem {
+                    Label("Zafin AI Agent", systemImage: "sparkles.bubble.fill")
+                }
+            
+            CheckoutContainerView()
+                .tabItem {
+                    Label("MVVM-C Checkout", systemImage: "cart.fill")
+                }
+            
+                
+        }
     }
 }

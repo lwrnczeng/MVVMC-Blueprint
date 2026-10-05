@@ -1,7 +1,7 @@
 import Foundation
 
 /// Concrete implementation of OrderRepositoryProtocol in the Data Layer.
-/// Encapsulates DTO decoding/encoding and delegates HTTP execution to NetworkServiceProtocol.
+/// Encapsulates DTO decoding/encoding and delegates HTTP execution to NetworkServiceProtocol (DummyJSON API).
 public final class OrderRepository: OrderRepositoryProtocol, Sendable {
     private let networkService: NetworkServiceProtocol
     
@@ -9,30 +9,31 @@ public final class OrderRepository: OrderRepositoryProtocol, Sendable {
         self.networkService = networkService
     }
     
-    public func submitOrder(_ order: Order) async throws -> Order {
-        let doubleAmount = NSDecimalNumber(decimal: order.subtotal).doubleValue
-        let inputDTO = OrderDTO(
-            orderId: order.id.uuidString,
-            totalAmount: doubleAmount,
-            status: "SUBMITTED",
-            createdAt: ISO8601DateFormatter().string(from: Date())
-        )
-        
-        let endpoint = CheckoutEndpoint.submitOrder(inputDTO)
+    public func fetchCart(id: Int) async throws -> Order {
+        let endpoint = CheckoutEndpoint.getCart(id: id)
         
         do {
-            // Attempt remote API request
-            let responseDTO: OrderDTO = try await networkService.request(endpoint)
-            return responseDTO.toDomain()
+            // Attempt live remote DummyJSON API call: GET https://dummyjson.com/carts/1
+            let cartDTO: DummyCartDTO = try await networkService.request(endpoint)
+            return cartDTO.toDomain()
         } catch {
-            // Fallback for offline baseline demonstration if remote server isn't live
-            let fallbackDTO = OrderDTO(
-                orderId: order.id.uuidString,
-                totalAmount: doubleAmount,
-                status: "SUBMITTED_LOCAL_FALLBACK",
-                createdAt: ISO8601DateFormatter().string(from: Date())
-            )
-            return fallbackDTO.toDomain()
+            // Offline fallback to local bundle fixture if network is unavailable
+            return try loadLocalMockCartFixture()
+        }
+    }
+    
+    public func submitOrder(_ order: Order) async throws -> Order {
+        let itemsPayload = order.items.enumerated().map { index, item in
+            CheckoutEndpoint.AddCartProductItem(id: 100 + index, quantity: item.quantity)
+        }
+        let endpoint = CheckoutEndpoint.addCart(userId: 1, products: itemsPayload)
+        
+        do {
+            let cartDTO: DummyCartDTO = try await networkService.request(endpoint)
+            return cartDTO.toDomain()
+        } catch {
+            // Local fallback simulation
+            return order
         }
     }
     
@@ -40,23 +41,24 @@ public final class OrderRepository: OrderRepositoryProtocol, Sendable {
         let endpoint = CheckoutEndpoint.processPayment(orderId: orderId, amount: amount)
         
         struct PaymentResponseDTO: Codable {
-            let transactionId: String
-            let orderId: String
-            let totalPaid: Double
-            let status: String
+            let transactionId: String?
+            let orderId: String?
+            let totalPaid: Double?
+            let status: String?
         }
         
         do {
             let response: PaymentResponseDTO = try await networkService.request(endpoint)
+            let txnId = response.transactionId ?? ("TXN-" + UUID().uuidString.prefix(8).uppercased())
             return PaymentResult(
-                transactionId: response.transactionId,
-                orderId: UUID(uuidString: response.orderId) ?? orderId,
-                totalPaid: Decimal(response.totalPaid),
+                transactionId: txnId,
+                orderId: orderId,
+                totalPaid: amount,
                 timestamp: Date(),
                 status: .success
             )
         } catch {
-            // Fallback for offline baseline demonstration
+            // Local fallback simulation
             let txnId = "TXN-" + UUID().uuidString.prefix(8).uppercased()
             return PaymentResult(
                 transactionId: txnId,
@@ -66,5 +68,24 @@ public final class OrderRepository: OrderRepositoryProtocol, Sendable {
                 status: .success
             )
         }
+    }
+    
+    private func loadLocalMockCartFixture() throws -> Order {
+        guard let url = Bundle.module.url(forResource: "Get_a_single_cart", withExtension: "json") else {
+            // Basic hardcoded fallback if bundle resource is absent
+            return Order(
+                id: UUID(),
+                items: [
+                    Order.Item(name: "Blue Frock", price: 29.99, quantity: 4),
+                    Order.Item(name: "Generic Motorcycle", price: 3999.99, quantity: 3),
+                    Order.Item(name: "iPhone 6", price: 299.99, quantity: 3)
+                ],
+                subtotal: 13037.88
+            )
+        }
+        
+        let data = try Data(contentsOf: url)
+        let cartDTO = try JSONDecoder().decode(DummyCartDTO.self, from: data)
+        return cartDTO.toDomain()
     }
 }

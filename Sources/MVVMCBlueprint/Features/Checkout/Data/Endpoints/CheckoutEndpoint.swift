@@ -1,27 +1,44 @@
 import Foundation
 
-/// Feature API routes enum conforming to APIEndpoint.
+/// Feature API routes enum conforming to APIEndpoint (connecting to DummyJSON Carts API).
 public enum CheckoutEndpoint: APIEndpoint, Sendable {
-    case submitOrder(OrderDTO)
+    case getCart(id: Int)
+    case getCarts
+    case addCart(userId: Int, products: [AddCartProductItem])
     case processPayment(orderId: UUID, amount: Decimal)
     
+    public struct AddCartProductItem: Codable, Sendable {
+        public let id: Int
+        public let quantity: Int
+        
+        public init(id: Int, quantity: Int) {
+            self.id = id
+            self.quantity = quantity
+        }
+    }
+    
     public var baseURL: URL {
-        // Base API URL configuration (can be read from App Environment / Config)
-        return URL(string: "https://api.checkout.example.com/v1")!
+        return URL(string: "https://dummyjson.com")!
     }
     
     public var path: String {
         switch self {
-        case .submitOrder:
-            return "/orders"
+        case .getCart(let id):
+            return "/carts/\(id)"
+        case .getCarts:
+            return "/carts"
+        case .addCart:
+            return "/carts/add"
         case .processPayment(let orderId, _):
-            return "/orders/\(orderId.uuidString)/payments"
+            return "/carts/\(orderId.uuidString)/pay"
         }
     }
     
     public var method: HTTPMethod {
         switch self {
-        case .submitOrder, .processPayment:
+        case .getCart, .getCarts:
+            return .get
+        case .addCart, .processPayment:
             return .post
         }
     }
@@ -40,14 +57,19 @@ public enum CheckoutEndpoint: APIEndpoint, Sendable {
     public var body: Data? {
         let encoder = JSONEncoder()
         switch self {
-        case .submitOrder(let dto):
-            return try? encoder.encode(dto)
+        case .addCart(let userId, let products):
+            struct AddCartPayload: Encodable {
+                let userId: Int
+                let products: [AddCartProductItem]
+            }
+            return try? encoder.encode(AddCartPayload(userId: userId, products: products))
         case .processPayment(_, let amount):
             struct PaymentPayload: Encodable {
                 let amount: Double
             }
-            let payload = PaymentPayload(amount: NSDecimalNumber(decimal: amount).doubleValue)
-            return try? encoder.encode(payload)
+            return try? encoder.encode(PaymentPayload(amount: NSDecimalNumber(decimal: amount).doubleValue))
+        case .getCart, .getCarts:
+            return nil
         }
     }
 }

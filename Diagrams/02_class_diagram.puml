@@ -6,7 +6,11 @@ skinparam class {
     BorderColor #2C3E50
 }
 
-package "Core Navigation" {
+package "App / Root Level" {
+    class AppContainerView << View >> {
+        -appCoordinator: AppCoordinator
+    }
+
     interface Coordinator {
         +childCoordinators: [Coordinator]
         +start()
@@ -14,26 +18,20 @@ package "Core Navigation" {
         +removeChild(coordinator: Coordinator)
     }
 
+    class AppCoordinator << MainActor >> {
+        +router: NavigationRouter
+        +catalogCoordinator: CatalogCoordinator
+        +checkoutCoordinator: CheckoutCoordinator
+        +selectedTab: Tab
+        +start()
+        +catalogDidSelectProductForCheckout(Product)
+    }
+
     class NavigationRouter << MainActor >> {
         +path: NavigationPath
         +push(route: T)
         +pop()
         +popToRoot()
-    }
-
-    interface CheckoutCoordinatorProtocol {
-        +showDiscount(for order: Order)
-        +showPayment(for order: Order, discount: Discount?)
-        +showSuccess(result: PaymentResult)
-        +finishCheckout()
-    }
-
-    class CheckoutCoordinator << MainActor >> {
-        +router: NavigationRouter
-        -repository: OrderRepositoryProtocol
-        -calculateDiscountUseCase: CalculateDiscountUseCaseProtocol
-        -processPaymentUseCase: ProcessPaymentUseCaseProtocol
-        +buildView(for route: CheckoutRoute): View
     }
 }
 
@@ -60,7 +58,122 @@ package "Core Networking Infrastructure" {
     }
 }
 
-package "ViewModels" {
+package "Catalog Feature (Module 1)" {
+    class CatalogContainerView << View >> {
+        -coordinator: CatalogCoordinator
+        -router: NavigationRouter
+    }
+
+    interface CatalogCoordinatorDelegate {
+        +catalogDidSelectProductForCheckout(Product)
+    }
+
+    interface CatalogCoordinatorProtocol {
+        +showProductDetail(Product)
+        +proceedToCheckout(with: Product)
+    }
+
+    class CatalogCoordinator << MainActor >> {
+        +router: NavigationRouter
+        +delegate: CatalogCoordinatorDelegate?
+        -fetchProductsUseCase: FetchProductsUseCaseProtocol
+        +showProductDetail(Product)
+        +proceedToCheckout(with: Product)
+        +buildView(for: CatalogRoute): View
+    }
+
+    enum CatalogRoute {
+        productList
+        productDetail(Product)
+    }
+
+    class CatalogViewModel << MainActor >> {
+        +products: [Product]
+        +isLoading: Bool
+        +errorMessage: String?
+        -coordinator: CatalogCoordinatorProtocol
+        -fetchProductsUseCase: FetchProductsUseCaseProtocol
+        +loadProducts() async
+        +selectProduct(Product)
+    }
+
+    interface ProductRepositoryProtocol {
+        +fetchProducts(): [Product]
+        +fetchProductDetails(id: Int): Product
+    }
+
+    interface FetchProductsUseCaseProtocol {
+        +execute(): [Product]
+    }
+
+    class FetchProductsUseCase {
+        -repository: ProductRepositoryProtocol
+        +execute(): [Product]
+    }
+
+    class ProductRepository {
+        -networkService: NetworkServiceProtocol
+        +fetchProducts(): [Product]
+        +fetchProductDetails(id: Int): Product
+    }
+
+    enum ProductEndpoint {
+        getProducts
+        getProductDetails(id: Int)
+    }
+
+    class Product << Entity >> {
+        +id: Int
+        +title: String
+        +description: String
+        +category: String
+        +price: Decimal
+        +rating: Double
+        +thumbnail: String
+    }
+
+    class ProductDTO << Codable >> {
+        +id: Int
+        +title: String
+        +price: Double
+        +rating: Double
+        +thumbnail: String
+        +toDomain(): Product
+    }
+}
+
+package "Checkout Feature (Module 2)" {
+    class CheckoutContainerView << View >> {
+        -coordinator: CheckoutCoordinator
+        -router: NavigationRouter
+    }
+
+    interface CheckoutCoordinatorProtocol {
+        +showDiscount(for: Order)
+        +showPayment(for: Order, discount: Discount?)
+        +showSuccess(result: PaymentResult)
+        +finishCheckout()
+    }
+
+    class CheckoutCoordinator << MainActor >> {
+        +router: NavigationRouter
+        -repository: OrderRepositoryProtocol
+        -calculateDiscountUseCase: CalculateDiscountUseCaseProtocol
+        -processPaymentUseCase: ProcessPaymentUseCaseProtocol
+        +showDiscount(for: Order)
+        +showPayment(for: Order, discount: Discount?)
+        +showSuccess(result: PaymentResult)
+        +finishCheckout()
+        +buildView(for: CheckoutRoute): View
+    }
+
+    enum CheckoutRoute {
+        inputOrder
+        discount(Order)
+        payment(Order, Discount?)
+        success(PaymentResult)
+    }
+
     class CheckoutInputViewModel << MainActor >> {
         +itemName: String
         +itemPriceText: String
@@ -90,9 +203,7 @@ package "ViewModels" {
         -processPaymentUseCase: ProcessPaymentUseCaseProtocol
         +processPayment() async
     }
-}
 
-package "Domain Layer (Pure Business Logic & Interfaces)" {
     interface OrderRepositoryProtocol {
         +fetchCart(id: Int): Order
         +submitOrder(order: Order): Order
@@ -115,9 +226,7 @@ package "Domain Layer (Pure Business Logic & Interfaces)" {
         -repository: OrderRepositoryProtocol
         +execute(orderId: UUID, amount: Decimal): PaymentResult
     }
-}
 
-package "Data Layer (Implementation & Adapters)" {
     class OrderRepository {
         -networkService: NetworkServiceProtocol
         +fetchCart(id: Int): Order
@@ -125,55 +234,98 @@ package "Data Layer (Implementation & Adapters)" {
         +processPayment(orderId: UUID, amount: Decimal): PaymentResult
     }
 
-    class CheckoutEndpoint {
-        +getCart(id: Int)
-        +getCarts
-        +addCart(userId: Int, products)
-        +processPayment(UUID, Decimal)
+    enum CheckoutEndpoint {
+        getCart(id: Int)
+        getCarts
+        addCart(userId: Int, products)
+        processPayment(UUID, Decimal)
     }
 
-    class DummyCartDTO {
+    class Order << Entity >> {
+        +id: UUID
+        +items: [Item]
+        +subtotal: Decimal
+    }
+
+    class Discount << Entity >> {
+        +code: String
+        +percentage: Decimal
+        +amountSaved: Decimal
+        +finalAmount: Decimal
+    }
+
+    class PaymentResult << Entity >> {
+        +transactionId: String
+        +orderId: UUID
+        +totalPaid: Decimal
+        +status: Status
+    }
+
+    class DummyCartDTO << Codable >> {
         +id: Int
         +products: [DummyCartProductDTO]
         +total: Double
-        +discountedTotal: Double
-        +userId: Int
-        +toDomain(): Order
-    }
-
-    class OrderDTO {
-        +orderId: String
-        +totalAmount: Double
-        +status: String
-        +createdAt: String
         +toDomain(): Order
     }
 }
 
-' Relationships & Invocations (Declared outside packages to prevent visual duplication)
+' Root & Navigation Conformance
+AppContainerView --> AppCoordinator
+Coordinator <|.. AppCoordinator
+Coordinator <|.. CatalogCoordinator
 Coordinator <|.. CheckoutCoordinator
-CheckoutCoordinatorProtocol <|.. CheckoutCoordinator
-CheckoutCoordinator --> NavigationRouter
 
-NetworkServiceProtocol <|.. URLSessionNetworkService
-URLSessionNetworkService --> APIEndpoint
+AppCoordinator ..|> CatalogCoordinatorDelegate
+AppCoordinator --> CatalogCoordinator
+AppCoordinator --> CheckoutCoordinator
+AppCoordinator --> NavigationRouter
+CatalogCoordinator --> CatalogCoordinatorDelegate
+CatalogCoordinator ..|> CatalogCoordinatorProtocol
+CheckoutCoordinator ..|> CheckoutCoordinatorProtocol
+
+' Catalog Module Relationships
+CatalogContainerView --> CatalogCoordinator
+CatalogCoordinator --> NavigationRouter
+CatalogCoordinator --> CatalogRoute
+CatalogCoordinator --> FetchProductsUseCaseProtocol
+CatalogViewModel --> CatalogCoordinatorProtocol
+CatalogViewModel --> FetchProductsUseCaseProtocol
+
+FetchProductsUseCaseProtocol <|.. FetchProductsUseCase
+FetchProductsUseCase --> ProductRepositoryProtocol
+ProductRepositoryProtocol <|.. ProductRepository
+ProductRepository --> ProductEndpoint
+ProductRepository --> ProductDTO
+ProductRepository --> NetworkServiceProtocol
+ProductEndpoint ..|> APIEndpoint
+
+' Checkout Module Relationships
+CheckoutContainerView --> CheckoutCoordinator
+CheckoutCoordinator --> NavigationRouter
+CheckoutCoordinator --> CheckoutRoute
+CheckoutCoordinator --> OrderRepositoryProtocol
+CheckoutCoordinator --> CalculateDiscountUseCaseProtocol
+CheckoutCoordinator --> ProcessPaymentUseCaseProtocol
 
 CheckoutInputViewModel --> CheckoutCoordinatorProtocol
 CheckoutInputViewModel --> OrderRepositoryProtocol
 DiscountViewModel --> CheckoutCoordinatorProtocol
+DiscountViewModel --> CalculateDiscountUseCaseProtocol
 PaymentViewModel --> CheckoutCoordinatorProtocol
+PaymentViewModel --> ProcessPaymentUseCaseProtocol
 
 CalculateDiscountUseCaseProtocol <|.. CalculateDiscountUseCase
 ProcessPaymentUseCaseProtocol <|.. ProcessPaymentUseCase
-DiscountViewModel --> CalculateDiscountUseCaseProtocol
-PaymentViewModel --> ProcessPaymentUseCaseProtocol
 ProcessPaymentUseCase --> OrderRepositoryProtocol
 
 OrderRepositoryProtocol <|.. OrderRepository
-APIEndpoint <|.. CheckoutEndpoint
-OrderRepository --> NetworkServiceProtocol
 OrderRepository --> CheckoutEndpoint
 OrderRepository --> DummyCartDTO
-OrderRepository --> OrderDTO
+OrderRepository --> NetworkServiceProtocol
+CheckoutEndpoint ..|> APIEndpoint
+
+' Infrastructure
+NetworkServiceProtocol <|.. URLSessionNetworkService
+URLSessionNetworkService --> APIEndpoint
 
 @enduml

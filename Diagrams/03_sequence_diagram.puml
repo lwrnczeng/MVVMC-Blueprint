@@ -1,88 +1,97 @@
 @startuml SequenceDiagram
 autonumber
 actor User
-participant CheckoutInputView as View
-participant CheckoutInputViewModel as VM
-participant OrderRepository as Repo
-participant NetworkService as NetService
-participant CheckoutCoordinator as Coord
+participant AppContainerView as AppView
+participant ProductListView as CatView
+participant CatalogViewModel as CatVM
+participant ProductRepository as ProdRepo
+participant CatalogCoordinator as CatCoord
+participant AppCoordinator as AppCoord
+participant CheckoutCoordinator as CheckCoord
 participant NavigationRouter as Router
 participant DiscountViewModel as DiscVM
-participant CalculateDiscountUseCase as UseCase
+participant CalculateDiscountUseCase as DiscUseCase
 participant PaymentViewModel as PayVM
 participant ProcessPaymentUseCase as PayUseCase
+participant OrderRepository as OrderRepo
 
-alt Option A: Fetch Live Sample Cart from DummyJSON API
-    User -> View: Taps "Fetch Sample Cart (dummyjson.com/carts/1)"
-    View -> VM: fetchDummyCart(id: 1)
-    activate VM
-    VM -> Repo: fetchCart(id: 1)
-    activate Repo
-    Repo -> NetService: request(CheckoutEndpoint.getCart(id: 1))
-    activate NetService
-    NetService --> Repo: Returns DummyCartDTO (products: Blue Frock, iPhone 6, etc.)
-    deactivate NetService
-    Repo --> VM: Returns mapped Domain Order
-    deactivate Repo
-    VM -> Coord: showDiscount(for: order)
-    deactivate VM
-else Option B: Manual Input Order Creation
-    User -> View: Enters Item Name & Price, Taps "Continue"
-    View -> VM: proceedToDiscount()
-    activate VM
-    VM -> VM: Validate inputs & create Order
-    VM -> Coord: showDiscount(for: order)
-    deactivate VM
-end
+== Feature 1: Catalog Browsing ==
+User -> AppView: Launches App
+AppView -> CatView: Renders initial Catalog tab
+CatView -> CatVM: task { loadProducts() }
+activate CatVM
+CatVM -> ProdRepo: fetchProducts()
+activate ProdRepo
+ProdRepo --> CatVM: Returns [Product] from DummyJSON
+deactivate ProdRepo
+CatVM --> CatView: Updates UI with product cards (titles, prices, ratings)
+deactivate CatVM
 
-activate Coord
-Coord -> Router: push(.discount(order))
-Router --> User: Displays DiscountView with items list & total
-deactivate Coord
+User -> CatView: Taps product (e.g. "Annibale Colombo Bed")
+CatView -> CatVM: selectProduct(product)
+activate CatVM
+CatVM -> CatCoord: showProductDetail(product)
+deactivate CatVM
+activate CatCoord
+CatCoord -> Router: push(CatalogRoute.productDetail(product))
+Router --> User: Displays ProductDetailView with image, price & description
+deactivate CatCoord
 
+== Cross-Feature Navigation (Delegate Contract) ==
+User -> CatView: Taps "Add to Cart & Checkout"
+CatView -> CatCoord: proceedToCheckout(with: product)
+activate CatCoord
+CatCoord -> AppCoord: catalogDidSelectProductForCheckout(product) [CatalogCoordinatorDelegate]
+deactivate CatCoord
+activate AppCoord
+AppCoord -> AppCoord: Convert Product -> Domain Order(items, subtotal)
+AppCoord -> CheckCoord: showDiscount(for: order)
+deactivate AppCoord
+activate CheckCoord
+CheckCoord -> Router: push(CheckoutRoute.discount(order))
+Router --> User: Displays DiscountView (Checkout Feature)
+deactivate CheckCoord
+
+== Feature 2: Checkout User Journey ==
 User -> DiscVM: Enters promo code "SAVE20" & Taps "Apply"
 activate DiscVM
-DiscVM -> UseCase: execute(subtotal, promoCode: "SAVE20")
-activate UseCase
-UseCase --> DiscVM: Returns Discount(code: "SAVE20", amountSaved, finalAmount)
-deactivate UseCase
-DiscVM --> User: Updates UI with discount
+DiscVM -> DiscUseCase: execute(subtotal, promoCode: "SAVE20")
+activate DiscUseCase
+DiscUseCase --> DiscVM: Returns Discount(code: "SAVE20", amountSaved: 20%, finalAmount)
+deactivate DiscUseCase
+DiscVM --> User: Updates UI with discount & updated total
 deactivate DiscVM
 
 User -> DiscVM: Taps "Proceed to Payment"
 activate DiscVM
-DiscVM -> Coord: showPayment(for: order, discount: discount)
+DiscVM -> CheckCoord: showPayment(for: order, discount: discount)
 deactivate DiscVM
-activate Coord
-Coord -> Router: push(.payment(order, discount))
+activate CheckCoord
+CheckCoord -> Router: push(CheckoutRoute.payment(order, discount))
 Router --> User: Displays PaymentView
-deactivate Coord
+deactivate CheckCoord
 
 User -> PayVM: Taps "Confirm & Pay Now"
 activate PayVM
 PayVM -> PayUseCase: execute(orderId, amount)
 activate PayUseCase
-PayUseCase -> Repo: processPayment(orderId, amount)
-activate Repo
-Repo -> NetService: request(CheckoutEndpoint.processPayment)
-activate NetService
-NetService --> Repo: Returns HTTP 200 / Payment response
-deactivate NetService
-Repo --> PayUseCase: Returns PaymentResult(txnId: "TXN-1234", status: .success)
-deactivate Repo
+PayUseCase -> OrderRepo: processPayment(orderId, amount)
+activate OrderRepo
+OrderRepo --> PayUseCase: Returns PaymentResult(transactionId: "TXN-1234", status: .success)
+deactivate OrderRepo
 PayUseCase --> PayVM: Returns PaymentResult
 deactivate PayUseCase
-PayVM -> Coord: showSuccess(result: result)
+PayVM -> CheckCoord: showSuccess(result: result)
 deactivate PayVM
-activate Coord
-Coord -> Router: push(.success(result))
+activate CheckCoord
+CheckCoord -> Router: push(CheckoutRoute.success(result))
 Router --> User: Displays Receipt View
-deactivate Coord
+deactivate CheckCoord
 
-User -> Coord: Taps "Done"
-activate Coord
-Coord -> Router: popToRoot()
-Router --> User: Resets to Checkout Input View
-deactivate Coord
+User -> CheckCoord: Taps "Done"
+activate CheckCoord
+CheckCoord -> Router: popToRoot()
+Router --> User: Navigation resets to root view
+deactivate CheckCoord
 
 @enduml

@@ -35,6 +35,16 @@ public final class CheckoutCoordinator: Coordinator, CheckoutCoordinatorProtocol
         self.processPaymentUseCase = processPaymentUseCase ?? ProcessPaymentUseCase(repository: repository)
     }
     
+    public convenience init(router: NavigationRouter) {
+        let repository = OrderRepository()
+        self.init(
+            router: router,
+            repository: repository,
+            calculateDiscountUseCase: CalculateDiscountUseCase(),
+            processPaymentUseCase: ProcessPaymentUseCase(repository: repository)
+        )
+    }
+    
     public convenience init() {
         let router = NavigationRouter()
         let repository = OrderRepository()

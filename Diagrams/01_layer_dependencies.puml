@@ -2,77 +2,118 @@
 skinparam packageBackgroundColor #F8F9FA
 skinparam packageBorderColor #4A90E2
 
-package "UI Layer (SwiftUI)" #EBF3FB {
-    [CheckoutContainerView]
-    [CheckoutInputView]
-    [DiscountView]
-    [PaymentView]
+package "App / Root Level" #FAF0E6 {
+    [AppContainerView]
+    [AppCoordinator]
 }
 
-package "Presentation & Navigation Layer" #F3E9F8 {
+package "Catalog Feature (Module 1)" #EBF5FB {
+    package "Catalog UI" {
+        [CatalogContainerView]
+        [ProductListView]
+        [ProductDetailView]
+    }
+    package "Catalog Presentation" {
+        [CatalogViewModel]
+        [CatalogCoordinator]
+        [CatalogCoordinatorDelegate] as CatDelegate
+    }
+    package "Catalog Domain" {
+        [FetchProductsUseCaseProtocol] as FetchUseCaseProto
+        [FetchProductsUseCase]
+        [ProductRepositoryProtocol] as ProdRepoProto
+        [Product Model] as Product
+    }
+    package "Catalog Data" {
+        [ProductRepository]
+        [ProductEndpoint]
+        [ProductDTO]
+    }
+}
+
+package "Checkout Feature (Module 2)" #FDF2E9 {
+    package "Checkout UI" {
+        [CheckoutContainerView]
+        [CheckoutInputView]
+        [DiscountView]
+        [PaymentView]
+    }
+    package "Checkout Presentation" {
+        [CheckoutCoordinator]
+        [CheckoutCoordinatorProtocol] as CoordProto
+        [CheckoutInputViewModel]
+        [DiscountViewModel]
+        [PaymentViewModel]
+    }
+    package "Checkout Domain" {
+        [OrderRepositoryProtocol] as OrderRepoProto
+        [CalculateDiscountUseCaseProtocol] as CalcDiscountProto
+        [CalculateDiscountUseCase]
+        [ProcessPaymentUseCaseProtocol] as ProcessPayProto
+        [ProcessPaymentUseCase]
+        [Order Model] as Order
+        [Discount Model] as Discount
+        [PaymentResult Model] as PaymentResult
+    }
+    package "Checkout Data" {
+        [OrderRepository]
+        [CheckoutEndpoint]
+        [DummyCartDTO]
+        [OrderDTO]
+    }
+}
+
+package "Core Infrastructure Layer" #F5EEF8 {
     [NavigationRouter]
-    [CheckoutCoordinator]
-    [CheckoutCoordinatorProtocol] as CoordProto
-    [CheckoutInputViewModel]
-    [DiscountViewModel]
-    [PaymentViewModel]
-}
-
-package "Domain Layer (Pure Business Logic)" #E8F8F5 {
-    [OrderRepositoryProtocol] as RepoProto
-    [CalculateDiscountUseCaseProtocol] as CalcUseCaseProto
-    [ProcessPaymentUseCaseProtocol] as PayUseCaseProto
-    [CalculateDiscountUseCase]
-    [ProcessPaymentUseCase]
-    [Order Model] as Order
-    [Discount Model] as Discount
-    [PaymentResult Model] as PaymentResult
-}
-
-package "Data Layer (Adapters & DTOs)" #FEF9E7 {
-    [OrderRepository]
-    [CheckoutEndpoint]
-    [DummyCartDTO]
-    [OrderDTO]
-}
-
-package "Core / Infrastructure Layer" #F5EEF8 {
     [NetworkServiceProtocol] as NetProto
     [URLSessionNetworkService]
     [APIEndpoint]
 }
 
-' Relationships
-[CheckoutContainerView] --> [NavigationRouter]
+' Root Orchestration & Cross-Feature Communication (Zero Direct Feature Coupling)
+[AppContainerView] --> [AppCoordinator]
+[AppCoordinator] --> [CatalogCoordinator]
+[AppCoordinator] ..|> CatDelegate
+[AppCoordinator] --> [CheckoutCoordinator]
+[CatalogCoordinator] --> CatDelegate
+
+' Catalog Feature Internal Flows (Strict Clean Architecture via Use Case)
+[CatalogContainerView] --> [CatalogCoordinator]
+[ProductListView] --> [CatalogViewModel]
+[ProductDetailView] --> [CatalogCoordinator]
+[CatalogViewModel] --> FetchUseCaseProto
+[CatalogViewModel] --> [CatalogCoordinator]
+[FetchProductsUseCase] ..|> FetchUseCaseProto
+[FetchProductsUseCase] --> ProdRepoProto
+[ProductRepository] ..|> ProdRepoProto
+[ProductRepository] --> [ProductEndpoint]
+[ProductRepository] --> NetProto
+
+' Checkout Feature Internal Flows (Strict Clean Architecture via Use Cases)
 [CheckoutContainerView] --> [CheckoutCoordinator]
 [CheckoutInputView] --> [CheckoutInputViewModel]
 [DiscountView] --> [DiscountViewModel]
 [PaymentView] --> [PaymentViewModel]
-
 [CheckoutInputViewModel] ..> CoordProto
-[CheckoutInputViewModel] --> RepoProto
+[CheckoutInputViewModel] --> OrderRepoProto
 [DiscountViewModel] ..> CoordProto
+[DiscountViewModel] --> CalcDiscountProto
 [PaymentViewModel] ..> CoordProto
-
+[PaymentViewModel] --> ProcessPayProto
+[CalculateDiscountUseCase] ..|> CalcDiscountProto
+[ProcessPaymentUseCase] ..|> ProcessPayProto
+[ProcessPaymentUseCase] --> OrderRepoProto
 [CheckoutCoordinator] ..|> CoordProto
-[CheckoutCoordinator] --> [NavigationRouter]
-
-[DiscountViewModel] --> CalcUseCaseProto
-[PaymentViewModel] --> PayUseCaseProto
-
-[CalculateDiscountUseCase] ..|> CalcUseCaseProto
-[ProcessPaymentUseCase] ..|> PayUseCaseProto
-[ProcessPaymentUseCase] --> RepoProto
-
-[OrderRepository] ..|> RepoProto
+[OrderRepository] ..|> OrderRepoProto
 [OrderRepository] --> [CheckoutEndpoint]
 [OrderRepository] --> NetProto
-[OrderRepository] --> [DummyCartDTO]
-[OrderRepository] --> [OrderDTO]
-[CheckoutEndpoint] ..|> [APIEndpoint]
-[DummyCartDTO] ..> Order
 
+' Core Infrastructure Conformance
+[CheckoutEndpoint] ..|> [APIEndpoint]
+[ProductEndpoint] ..|> [APIEndpoint]
 [URLSessionNetworkService] ..|> NetProto
-[URLSessionNetworkService] --> [APIEndpoint]
+[AppCoordinator] --> [NavigationRouter]
+[CatalogCoordinator] --> [NavigationRouter]
+[CheckoutCoordinator] --> [NavigationRouter]
 
 @enduml

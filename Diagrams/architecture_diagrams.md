@@ -1,80 +1,72 @@
 # MVVM-C Architecture - Dependency & Interaction Diagrams
 
-This document contains visual diagrams (both **Mermaid** for native Markdown rendering and **PlantUML** for extension previews) illustrating the structural dependencies, protocol abstractions, and runtime navigation flow of the **MVVM-C (Model-View-ViewModel-Coordinator)** architecture implementation in `MVVMC-Blueprint`.
+This document contains visual diagrams (both **Mermaid** for native Markdown rendering and **PlantUML** for extension previews) illustrating the structural dependencies, protocol abstractions, and multi-feature cross-navigation flow of the **MVVM-C (Model-View-ViewModel-Coordinator)** architecture implementation in `MVVMC-Blueprint`.
 
 ---
 
-## 1. High-Level Clean Architecture Layer Dependency
+## 1. High-Level Multi-Feature Architecture Layer Dependency
 
-The rule of Clean Architecture: **Outer layers depend inward on abstract interfaces; inner domain layers have ZERO knowledge of UI, frameworks, or data persistence.**
+The rule of Multi-Feature Clean Architecture: **Features are strictly isolated from each other. ViewModels depend on Domain Use Case protocols (`FetchProductsUseCaseProtocol`), Use Cases depend on Domain Repository protocols (`ProductRepositoryProtocol`), and Repositories in the Data layer implement them (Dependency Inversion). Cross-feature transitions are coordinated by an App-level Root Coordinator (`AppCoordinator`) through Feature Delegate Protocols (`CatalogCoordinatorDelegate`).**
 
 ### Mermaid Diagram
 ```mermaid
 graph TD
-    subgraph UI ["UI Layer (SwiftUI)"]
-        Container["CheckoutContainerView"]
-        InputView["CheckoutInputView"]
-        DiscountView["DiscountView"]
-        PaymentView["PaymentView"]
+    subgraph Root ["App / Root Level"]
+        AppView["AppContainerView"]
+        AppCoord["AppCoordinator"]
     end
 
-    subgraph Presentation ["Presentation & Navigation Layer"]
-        Router["NavigationRouter (@MainActor)"]
-        Coordinator["CheckoutCoordinator"]
-        InputVM["CheckoutInputViewModel"]
-        DiscountVM["DiscountViewModel"]
-        PaymentVM["PaymentViewModel"]
+    subgraph Catalog ["Catalog Feature (Module 1)"]
+        CatView["CatalogContainerView / ProductListView / DetailView"]
+        CatCoord["CatalogCoordinator"]
+        CatVM["CatalogViewModel"]
+        CatDelegate["CatalogCoordinatorDelegate (Contract)"]
+        FetchUseCaseProto["FetchProductsUseCaseProtocol"]
+        FetchUseCase["FetchProductsUseCase"]
+        ProdRepoProto["ProductRepositoryProtocol"]
+        ProdRepo["ProductRepository"]
     end
 
-    subgraph Domain ["Domain Layer (Pure Business Logic & Protocols)"]
-        OrderRepoProtocol["OrderRepositoryProtocol"]
-        CalcUseCase["CalculateDiscountUseCaseProtocol"]
-        PayUseCase["ProcessPaymentUseCaseProtocol"]
-        OrderModel["Order / Discount / PaymentResult Models"]
-    end
-
-    subgraph Data ["Data Layer (Adapters & DTOs)"]
-        OrderRepoImpl["OrderRepository"]
-        CheckoutEndpoint["CheckoutEndpoint (dummyjson.com)"]
-        DummyCartDTO["DummyCartDTO"]
-        OrderDTO["OrderDTO"]
+    subgraph Checkout ["Checkout Feature (Module 2)"]
+        CheckView["CheckoutContainerView / Input / Discount / Payment"]
+        CheckCoord["CheckoutCoordinator"]
+        CheckVM["CheckoutInputViewModel / DiscVM / PayVM"]
+        OrderRepoProto["OrderRepositoryProtocol"]
+        OrderRepo["OrderRepository"]
     end
 
     subgraph Core ["Core Infrastructure Layer"]
+        Router["NavigationRouter (@MainActor)"]
         NetProto["NetworkServiceProtocol"]
         URLSessionEngine["URLSessionNetworkService"]
         APIEndpoint["APIEndpoint"]
     end
 
-    %% UI -> Presentation & Navigation
-    Container --> Router
-    Container --> Coordinator
-    InputView --> InputVM
-    DiscountView --> DiscountVM
-    PaymentView --> PaymentVM
+    %% Root Navigation & Cross-Feature Coordination
+    AppView --> AppCoord
+    AppCoord --> CatCoord
+    AppCoord ..|> CatDelegate
+    AppCoord --> CheckCoord
+    CatCoord --> CatDelegate
 
-    %% Presentation -> Coordinator Protocols & Domain
-    Coordinator -.-> Router
-    InputVM -.->|Delegate/Protocol| CoordinatorProtocol["CheckoutCoordinatorProtocol"]
-    InputVM --> OrderRepoProtocol
-    DiscountVM -.->|Delegate/Protocol| CoordinatorProtocol
-    PaymentVM -.->|Delegate/Protocol| CoordinatorProtocol
+    %% Catalog Internal (Strict Clean Architecture)
+    CatView --> CatVM
+    CatView --> CatCoord
+    CatVM --> CatCoord
+    CatVM --> FetchUseCaseProto
+    FetchUseCase -.->|implements| FetchUseCaseProto
+    FetchUseCase --> ProdRepoProto
+    ProdRepo -.->|implements| ProdRepoProto
+    ProdRepo --> NetProto
 
-    DiscountVM --> CalcUseCase
-    PaymentVM --> PayUseCase
+    %% Checkout Internal
+    CheckView --> CheckCoord
+    CheckVM --> CheckCoord
+    CheckVM --> OrderRepoProto
+    OrderRepo -.->|implements| OrderRepoProto
+    OrderRepo --> NetProto
 
-    %% Domain -> Data Protocol Boundary (Dependency Inversion)
-    PayUseCase --> OrderRepoProtocol
-    OrderRepoImpl ..|> OrderRepoProtocol
-    OrderRepoImpl --> CheckoutEndpoint
-    OrderRepoImpl --> NetProto
-    OrderRepoImpl --> DummyCartDTO
-    OrderRepoImpl --> OrderDTO
-    CheckoutEndpoint ..|> APIEndpoint
-    DummyCartDTO ..> OrderModel
-
-    URLSessionEngine ..|> NetProto
-    URLSessionEngine --> APIEndpoint
+    URLSessionEngine -.->|implements| NetProto
 ```
 
 ### PlantUML Diagram
@@ -83,87 +75,126 @@ graph TD
 skinparam packageBackgroundColor #F8F9FA
 skinparam packageBorderColor #4A90E2
 
-package "UI Layer (SwiftUI)" #EBF3FB {
-    [CheckoutContainerView]
-    [CheckoutInputView]
-    [DiscountView]
-    [PaymentView]
+package "App / Root Level" #FAF0E6 {
+    [AppContainerView]
+    [AppCoordinator]
 }
 
-package "Presentation & Navigation Layer" #F3E9F8 {
+package "Catalog Feature (Module 1)" #EBF5FB {
+    package "Catalog UI" {
+        [CatalogContainerView]
+        [ProductListView]
+        [ProductDetailView]
+    }
+    package "Catalog Presentation" {
+        [CatalogViewModel]
+        [CatalogCoordinator]
+        [CatalogCoordinatorDelegate] as CatDelegate
+    }
+    package "Catalog Domain" {
+        [FetchProductsUseCaseProtocol] as FetchUseCaseProto
+        [FetchProductsUseCase]
+        [ProductRepositoryProtocol] as ProdRepoProto
+        [Product Model] as Product
+    }
+    package "Catalog Data" {
+        [ProductRepository]
+        [ProductEndpoint]
+        [ProductDTO]
+    }
+}
+
+package "Checkout Feature (Module 2)" #FDF2E9 {
+    package "Checkout UI" {
+        [CheckoutContainerView]
+        [CheckoutInputView]
+        [DiscountView]
+        [PaymentView]
+    }
+    package "Checkout Presentation" {
+        [CheckoutCoordinator]
+        [CheckoutCoordinatorProtocol] as CoordProto
+        [CheckoutInputViewModel]
+        [DiscountViewModel]
+        [PaymentViewModel]
+    }
+    package "Checkout Domain" {
+        [OrderRepositoryProtocol] as OrderRepoProto
+        [CalculateDiscountUseCaseProtocol] as CalcDiscountProto
+        [CalculateDiscountUseCase]
+        [ProcessPaymentUseCaseProtocol] as ProcessPayProto
+        [ProcessPaymentUseCase]
+        [Order Model] as Order
+        [Discount Model] as Discount
+        [PaymentResult Model] as PaymentResult
+    }
+    package "Checkout Data" {
+        [OrderRepository]
+        [CheckoutEndpoint]
+        [DummyCartDTO]
+        [OrderDTO]
+    }
+}
+
+package "Core Infrastructure Layer" #F5EEF8 {
     [NavigationRouter]
-    [CheckoutCoordinator]
-    [CheckoutCoordinatorProtocol] as CoordProto
-    [CheckoutInputViewModel]
-    [DiscountViewModel]
-    [PaymentViewModel]
-}
-
-package "Domain Layer (Pure Business Logic & Protocols)" #E8F8F5 {
-    [OrderRepositoryProtocol] as RepoProto
-    [CalculateDiscountUseCaseProtocol] as CalcUseCaseProto
-    [ProcessPaymentUseCaseProtocol] as PayUseCaseProto
-    [CalculateDiscountUseCase]
-    [ProcessPaymentUseCase]
-    [Order Model] as Order
-    [Discount Model] as Discount
-    [PaymentResult Model] as PaymentResult
-}
-
-package "Data Layer (Adapters & DTOs)" #FEF9E7 {
-    [OrderRepository]
-    [CheckoutEndpoint]
-    [DummyCartDTO]
-    [OrderDTO]
-}
-
-package "Core / Infrastructure Layer" #F5EEF8 {
     [NetworkServiceProtocol] as NetProto
     [URLSessionNetworkService]
     [APIEndpoint]
 }
 
-' Relationships
-[CheckoutContainerView] --> [NavigationRouter]
+' Root Orchestration & Cross-Feature Communication (Zero Direct Feature Coupling)
+[AppContainerView] --> [AppCoordinator]
+[AppCoordinator] --> [CatalogCoordinator]
+[AppCoordinator] ..|> CatDelegate
+[AppCoordinator] --> [CheckoutCoordinator]
+[CatalogCoordinator] --> CatDelegate
+
+' Catalog Feature Internal Flows (Strict Clean Architecture via Use Case)
+[CatalogContainerView] --> [CatalogCoordinator]
+[ProductListView] --> [CatalogViewModel]
+[ProductDetailView] --> [CatalogCoordinator]
+[CatalogViewModel] --> FetchUseCaseProto
+[CatalogViewModel] --> [CatalogCoordinator]
+[FetchProductsUseCase] ..|> FetchUseCaseProto
+[FetchProductsUseCase] --> ProdRepoProto
+[ProductRepository] ..|> ProdRepoProto
+[ProductRepository] --> [ProductEndpoint]
+[ProductRepository] --> NetProto
+
+' Checkout Feature Internal Flows (Strict Clean Architecture via Use Cases)
 [CheckoutContainerView] --> [CheckoutCoordinator]
 [CheckoutInputView] --> [CheckoutInputViewModel]
 [DiscountView] --> [DiscountViewModel]
 [PaymentView] --> [PaymentViewModel]
-
 [CheckoutInputViewModel] ..> CoordProto
-[CheckoutInputViewModel] --> RepoProto
+[CheckoutInputViewModel] --> OrderRepoProto
 [DiscountViewModel] ..> CoordProto
+[DiscountViewModel] --> CalcDiscountProto
 [PaymentViewModel] ..> CoordProto
-
+[PaymentViewModel] --> ProcessPayProto
+[CalculateDiscountUseCase] ..|> CalcDiscountProto
+[ProcessPaymentUseCase] ..|> ProcessPayProto
+[ProcessPaymentUseCase] --> OrderRepoProto
 [CheckoutCoordinator] ..|> CoordProto
-[CheckoutCoordinator] --> [NavigationRouter]
-
-[DiscountViewModel] --> CalcUseCaseProto
-[PaymentViewModel] --> PayUseCaseProto
-
-[CalculateDiscountUseCase] ..|> CalcUseCaseProto
-[ProcessPaymentUseCase] ..|> PayUseCaseProto
-[ProcessPaymentUseCase] --> RepoProto
-
-[OrderRepository] ..|> RepoProto
+[OrderRepository] ..|> OrderRepoProto
 [OrderRepository] --> [CheckoutEndpoint]
 [OrderRepository] --> NetProto
-[OrderRepository] --> [DummyCartDTO]
-[OrderRepository] --> [OrderDTO]
-[CheckoutEndpoint] ..|> [APIEndpoint]
-[DummyCartDTO] ..> Order
 
+' Core Infrastructure Conformance
+[CheckoutEndpoint] ..|> [APIEndpoint]
+[ProductEndpoint] ..|> [APIEndpoint]
 [URLSessionNetworkService] ..|> NetProto
-[URLSessionNetworkService] --> [APIEndpoint]
+[AppCoordinator] --> [NavigationRouter]
+[CatalogCoordinator] --> [NavigationRouter]
+[CheckoutCoordinator] --> [NavigationRouter]
 
 @enduml
 ```
 
 ---
 
-## 2. Detailed Class & Protocol Diagram (UML)
-
-This diagram details protocol decoupling, weak delegation, and dependency injection across all components. Notice that **`OrderRepositoryProtocol` is owned by Domain**, returning pure `Order` Domain Models rather than DTOs.
+## 2. Detailed Class & Protocol UML Diagram
 
 ### PlantUML Diagram
 ```plantuml
@@ -175,7 +206,11 @@ skinparam class {
     BorderColor #2C3E50
 }
 
-package "Core Navigation" {
+package "App / Root Level" {
+    class AppContainerView << View >> {
+        -appCoordinator: AppCoordinator
+    }
+
     interface Coordinator {
         +childCoordinators: [Coordinator]
         +start()
@@ -183,26 +218,20 @@ package "Core Navigation" {
         +removeChild(coordinator: Coordinator)
     }
 
+    class AppCoordinator << MainActor >> {
+        +router: NavigationRouter
+        +catalogCoordinator: CatalogCoordinator
+        +checkoutCoordinator: CheckoutCoordinator
+        +selectedTab: Tab
+        +start()
+        +catalogDidSelectProductForCheckout(Product)
+    }
+
     class NavigationRouter << MainActor >> {
         +path: NavigationPath
         +push(route: T)
         +pop()
         +popToRoot()
-    }
-
-    interface CheckoutCoordinatorProtocol {
-        +showDiscount(for order: Order)
-        +showPayment(for order: Order, discount: Discount?)
-        +showSuccess(result: PaymentResult)
-        +finishCheckout()
-    }
-
-    class CheckoutCoordinator << MainActor >> {
-        +router: NavigationRouter
-        -repository: OrderRepositoryProtocol
-        -calculateDiscountUseCase: CalculateDiscountUseCaseProtocol
-        -processPaymentUseCase: ProcessPaymentUseCaseProtocol
-        +buildView(for route: CheckoutRoute): View
     }
 }
 
@@ -229,7 +258,122 @@ package "Core Networking Infrastructure" {
     }
 }
 
-package "ViewModels" {
+package "Catalog Feature (Module 1)" {
+    class CatalogContainerView << View >> {
+        -coordinator: CatalogCoordinator
+        -router: NavigationRouter
+    }
+
+    interface CatalogCoordinatorDelegate {
+        +catalogDidSelectProductForCheckout(Product)
+    }
+
+    interface CatalogCoordinatorProtocol {
+        +showProductDetail(Product)
+        +proceedToCheckout(with: Product)
+    }
+
+    class CatalogCoordinator << MainActor >> {
+        +router: NavigationRouter
+        +delegate: CatalogCoordinatorDelegate?
+        -fetchProductsUseCase: FetchProductsUseCaseProtocol
+        +showProductDetail(Product)
+        +proceedToCheckout(with: Product)
+        +buildView(for: CatalogRoute): View
+    }
+
+    enum CatalogRoute {
+        productList
+        productDetail(Product)
+    }
+
+    class CatalogViewModel << MainActor >> {
+        +products: [Product]
+        +isLoading: Bool
+        +errorMessage: String?
+        -coordinator: CatalogCoordinatorProtocol
+        -fetchProductsUseCase: FetchProductsUseCaseProtocol
+        +loadProducts() async
+        +selectProduct(Product)
+    }
+
+    interface ProductRepositoryProtocol {
+        +fetchProducts(): [Product]
+        +fetchProductDetails(id: Int): Product
+    }
+
+    interface FetchProductsUseCaseProtocol {
+        +execute(): [Product]
+    }
+
+    class FetchProductsUseCase {
+        -repository: ProductRepositoryProtocol
+        +execute(): [Product]
+    }
+
+    class ProductRepository {
+        -networkService: NetworkServiceProtocol
+        +fetchProducts(): [Product]
+        +fetchProductDetails(id: Int): Product
+    }
+
+    enum ProductEndpoint {
+        getProducts
+        getProductDetails(id: Int)
+    }
+
+    class Product << Entity >> {
+        +id: Int
+        +title: String
+        +description: String
+        +category: String
+        +price: Decimal
+        +rating: Double
+        +thumbnail: String
+    }
+
+    class ProductDTO << Codable >> {
+        +id: Int
+        +title: String
+        +price: Double
+        +rating: Double
+        +thumbnail: String
+        +toDomain(): Product
+    }
+}
+
+package "Checkout Feature (Module 2)" {
+    class CheckoutContainerView << View >> {
+        -coordinator: CheckoutCoordinator
+        -router: NavigationRouter
+    }
+
+    interface CheckoutCoordinatorProtocol {
+        +showDiscount(for: Order)
+        +showPayment(for: Order, discount: Discount?)
+        +showSuccess(result: PaymentResult)
+        +finishCheckout()
+    }
+
+    class CheckoutCoordinator << MainActor >> {
+        +router: NavigationRouter
+        -repository: OrderRepositoryProtocol
+        -calculateDiscountUseCase: CalculateDiscountUseCaseProtocol
+        -processPaymentUseCase: ProcessPaymentUseCaseProtocol
+        +showDiscount(for: Order)
+        +showPayment(for: Order, discount: Discount?)
+        +showSuccess(result: PaymentResult)
+        +finishCheckout()
+        +buildView(for: CheckoutRoute): View
+    }
+
+    enum CheckoutRoute {
+        inputOrder
+        discount(Order)
+        payment(Order, Discount?)
+        success(PaymentResult)
+    }
+
     class CheckoutInputViewModel << MainActor >> {
         +itemName: String
         +itemPriceText: String
@@ -259,9 +403,7 @@ package "ViewModels" {
         -processPaymentUseCase: ProcessPaymentUseCaseProtocol
         +processPayment() async
     }
-}
 
-package "Domain Layer (Pure Business Logic & Interfaces)" {
     interface OrderRepositoryProtocol {
         +fetchCart(id: Int): Order
         +submitOrder(order: Order): Order
@@ -284,9 +426,7 @@ package "Domain Layer (Pure Business Logic & Interfaces)" {
         -repository: OrderRepositoryProtocol
         +execute(orderId: UUID, amount: Decimal): PaymentResult
     }
-}
 
-package "Data Layer (Implementation & Adapters)" {
     class OrderRepository {
         -networkService: NetworkServiceProtocol
         +fetchCart(id: Int): Order
@@ -294,152 +434,204 @@ package "Data Layer (Implementation & Adapters)" {
         +processPayment(orderId: UUID, amount: Decimal): PaymentResult
     }
 
-    class CheckoutEndpoint {
-        +getCart(id: Int)
-        +getCarts
-        +addCart(userId: Int, products)
-        +processPayment(UUID, Decimal)
+    enum CheckoutEndpoint {
+        getCart(id: Int)
+        getCarts
+        addCart(userId: Int, products)
+        processPayment(UUID, Decimal)
     }
 
-    class DummyCartDTO {
+    class Order << Entity >> {
+        +id: UUID
+        +items: [Item]
+        +subtotal: Decimal
+    }
+
+    class Discount << Entity >> {
+        +code: String
+        +percentage: Decimal
+        +amountSaved: Decimal
+        +finalAmount: Decimal
+    }
+
+    class PaymentResult << Entity >> {
+        +transactionId: String
+        +orderId: UUID
+        +totalPaid: Decimal
+        +status: Status
+    }
+
+    class DummyCartDTO << Codable >> {
         +id: Int
         +products: [DummyCartProductDTO]
         +total: Double
-        +discountedTotal: Double
-        +userId: Int
-        +toDomain(): Order
-    }
-
-    class OrderDTO {
-        +orderId: String
-        +totalAmount: Double
-        +status: String
-        +createdAt: String
         +toDomain(): Order
     }
 }
 
-' Relationships & Invocations (Declared outside packages to prevent visual duplication)
+' Root & Navigation Conformance
+AppContainerView --> AppCoordinator
+Coordinator <|.. AppCoordinator
+Coordinator <|.. CatalogCoordinator
 Coordinator <|.. CheckoutCoordinator
-CheckoutCoordinatorProtocol <|.. CheckoutCoordinator
-CheckoutCoordinator --> NavigationRouter
 
-NetworkServiceProtocol <|.. URLSessionNetworkService
-URLSessionNetworkService --> APIEndpoint
+AppCoordinator ..|> CatalogCoordinatorDelegate
+AppCoordinator --> CatalogCoordinator
+AppCoordinator --> CheckoutCoordinator
+AppCoordinator --> NavigationRouter
+CatalogCoordinator --> CatalogCoordinatorDelegate
+CatalogCoordinator ..|> CatalogCoordinatorProtocol
+CheckoutCoordinator ..|> CheckoutCoordinatorProtocol
+
+' Catalog Module Relationships
+CatalogContainerView --> CatalogCoordinator
+CatalogCoordinator --> NavigationRouter
+CatalogCoordinator --> CatalogRoute
+CatalogCoordinator --> FetchProductsUseCaseProtocol
+CatalogViewModel --> CatalogCoordinatorProtocol
+CatalogViewModel --> FetchProductsUseCaseProtocol
+
+FetchProductsUseCaseProtocol <|.. FetchProductsUseCase
+FetchProductsUseCase --> ProductRepositoryProtocol
+ProductRepositoryProtocol <|.. ProductRepository
+ProductRepository --> ProductEndpoint
+ProductRepository --> ProductDTO
+ProductRepository --> NetworkServiceProtocol
+ProductEndpoint ..|> APIEndpoint
+
+' Checkout Module Relationships
+CheckoutContainerView --> CheckoutCoordinator
+CheckoutCoordinator --> NavigationRouter
+CheckoutCoordinator --> CheckoutRoute
+CheckoutCoordinator --> OrderRepositoryProtocol
+CheckoutCoordinator --> CalculateDiscountUseCaseProtocol
+CheckoutCoordinator --> ProcessPaymentUseCaseProtocol
 
 CheckoutInputViewModel --> CheckoutCoordinatorProtocol
 CheckoutInputViewModel --> OrderRepositoryProtocol
 DiscountViewModel --> CheckoutCoordinatorProtocol
+DiscountViewModel --> CalculateDiscountUseCaseProtocol
 PaymentViewModel --> CheckoutCoordinatorProtocol
+PaymentViewModel --> ProcessPaymentUseCaseProtocol
 
 CalculateDiscountUseCaseProtocol <|.. CalculateDiscountUseCase
 ProcessPaymentUseCaseProtocol <|.. ProcessPaymentUseCase
-DiscountViewModel --> CalculateDiscountUseCaseProtocol
-PaymentViewModel --> ProcessPaymentUseCaseProtocol
 ProcessPaymentUseCase --> OrderRepositoryProtocol
 
 OrderRepositoryProtocol <|.. OrderRepository
-APIEndpoint <|.. CheckoutEndpoint
-OrderRepository --> NetworkServiceProtocol
 OrderRepository --> CheckoutEndpoint
 OrderRepository --> DummyCartDTO
-OrderRepository --> OrderDTO
+OrderRepository --> NetworkServiceProtocol
+CheckoutEndpoint ..|> APIEndpoint
+
+' Infrastructure
+NetworkServiceProtocol <|.. URLSessionNetworkService
+URLSessionNetworkService --> APIEndpoint
 
 @enduml
 ```
 
 ---
 
-## 3. Runtime Sequence Diagram
+## 3. End-to-End Multi-Feature Sequence Diagram
 
 ### PlantUML Diagram
 ```plantuml
 @startuml SequenceDiagram
 autonumber
 actor User
-participant CheckoutInputView as View
-participant CheckoutInputViewModel as VM
-participant OrderRepository as Repo
-participant NetworkService as NetService
-participant CheckoutCoordinator as Coord
+participant AppContainerView as AppView
+participant ProductListView as CatView
+participant CatalogViewModel as CatVM
+participant ProductRepository as ProdRepo
+participant CatalogCoordinator as CatCoord
+participant AppCoordinator as AppCoord
+participant CheckoutCoordinator as CheckCoord
 participant NavigationRouter as Router
 participant DiscountViewModel as DiscVM
-participant CalculateDiscountUseCase as UseCase
+participant CalculateDiscountUseCase as DiscUseCase
 participant PaymentViewModel as PayVM
 participant ProcessPaymentUseCase as PayUseCase
+participant OrderRepository as OrderRepo
 
-alt Option A: Fetch Live Sample Cart from DummyJSON API
-    User -> View: Taps "Fetch Sample Cart (dummyjson.com/carts/1)"
-    View -> VM: fetchDummyCart(id: 1)
-    activate VM
-    VM -> Repo: fetchCart(id: 1)
-    activate Repo
-    Repo -> NetService: request(CheckoutEndpoint.getCart(id: 1))
-    activate NetService
-    NetService --> Repo: Returns DummyCartDTO (products: Blue Frock, iPhone 6, etc.)
-    deactivate NetService
-    Repo --> VM: Returns mapped Domain Order
-    deactivate Repo
-    VM -> Coord: showDiscount(for: order)
-    deactivate VM
-else Option B: Manual Input Order Creation
-    User -> View: Enters Item Name & Price, Taps "Continue"
-    View -> VM: proceedToDiscount()
-    activate VM
-    VM -> VM: Validate inputs & create Order
-    VM -> Coord: showDiscount(for: order)
-    deactivate VM
-end
+== Feature 1: Catalog Browsing ==
+User -> AppView: Launches App
+AppView -> CatView: Renders initial Catalog tab
+CatView -> CatVM: task { loadProducts() }
+activate CatVM
+CatVM -> ProdRepo: fetchProducts()
+activate ProdRepo
+ProdRepo --> CatVM: Returns [Product] from DummyJSON
+deactivate ProdRepo
+CatVM --> CatView: Updates UI with product cards (titles, prices, ratings)
+deactivate CatVM
 
-activate Coord
-Coord -> Router: push(.discount(order))
-Router --> User: Displays DiscountView with items list & total
-deactivate Coord
+User -> CatView: Taps product (e.g. "Annibale Colombo Bed")
+CatView -> CatVM: selectProduct(product)
+activate CatVM
+CatVM -> CatCoord: showProductDetail(product)
+deactivate CatVM
+activate CatCoord
+CatCoord -> Router: push(CatalogRoute.productDetail(product))
+Router --> User: Displays ProductDetailView with image, price & description
+deactivate CatCoord
 
+== Cross-Feature Navigation (Delegate Contract) ==
+User -> CatView: Taps "Add to Cart & Checkout"
+CatView -> CatCoord: proceedToCheckout(with: product)
+activate CatCoord
+CatCoord -> AppCoord: catalogDidSelectProductForCheckout(product) [CatalogCoordinatorDelegate]
+deactivate CatCoord
+activate AppCoord
+AppCoord -> AppCoord: Convert Product -> Domain Order(items, subtotal)
+AppCoord -> CheckCoord: showDiscount(for: order)
+deactivate AppCoord
+activate CheckCoord
+CheckCoord -> Router: push(CheckoutRoute.discount(order))
+Router --> User: Displays DiscountView (Checkout Feature)
+deactivate CheckCoord
+
+== Feature 2: Checkout User Journey ==
 User -> DiscVM: Enters promo code "SAVE20" & Taps "Apply"
 activate DiscVM
-DiscVM -> UseCase: execute(subtotal, promoCode: "SAVE20")
-activate UseCase
-UseCase --> DiscVM: Returns Discount(code: "SAVE20", amountSaved, finalAmount)
-deactivate UseCase
-DiscVM --> User: Updates UI with discount
+DiscVM -> DiscUseCase: execute(subtotal, promoCode: "SAVE20")
+activate DiscUseCase
+DiscUseCase --> DiscVM: Returns Discount(code: "SAVE20", amountSaved: 20%, finalAmount)
+deactivate DiscUseCase
+DiscVM --> User: Updates UI with discount & updated total
 deactivate DiscVM
 
 User -> DiscVM: Taps "Proceed to Payment"
 activate DiscVM
-DiscVM -> Coord: showPayment(for: order, discount: discount)
+DiscVM -> CheckCoord: showPayment(for: order, discount: discount)
 deactivate DiscVM
-activate Coord
-Coord -> Router: push(.payment(order, discount))
+activate CheckCoord
+CheckCoord -> Router: push(CheckoutRoute.payment(order, discount))
 Router --> User: Displays PaymentView
-deactivate Coord
+deactivate CheckCoord
 
 User -> PayVM: Taps "Confirm & Pay Now"
 activate PayVM
 PayVM -> PayUseCase: execute(orderId, amount)
 activate PayUseCase
-PayUseCase -> Repo: processPayment(orderId, amount)
-activate Repo
-Repo -> NetService: request(CheckoutEndpoint.processPayment)
-activate NetService
-NetService --> Repo: Returns HTTP 200 / Payment response
-deactivate NetService
-Repo --> PayUseCase: Returns PaymentResult(txnId: "TXN-1234", status: .success)
-deactivate Repo
+PayUseCase -> OrderRepo: processPayment(orderId, amount)
+activate OrderRepo
+OrderRepo --> PayUseCase: Returns PaymentResult(transactionId: "TXN-1234", status: .success)
+deactivate OrderRepo
 PayUseCase --> PayVM: Returns PaymentResult
 deactivate PayUseCase
-PayVM -> Coord: showSuccess(result: result)
+PayVM -> CheckCoord: showSuccess(result: result)
 deactivate PayVM
-activate Coord
-Coord -> Router: push(.success(result))
+activate CheckCoord
+CheckCoord -> Router: push(CheckoutRoute.success(result))
 Router --> User: Displays Receipt View
-deactivate Coord
+deactivate CheckCoord
 
-User -> Coord: Taps "Done"
-activate Coord
-Coord -> Router: popToRoot()
-Router --> User: Resets to Checkout Input View
-deactivate Coord
+User -> CheckCoord: Taps "Done"
+activate CheckCoord
+CheckCoord -> Router: popToRoot()
+Router --> User: Navigation resets to root view
+deactivate CheckCoord
 
 @enduml
 ```

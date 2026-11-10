@@ -1,14 +1,15 @@
 import Foundation
-import Combine
+import Observation
 
 /// Presentation logic and state management for creating or fetching an order.
 @MainActor
-public final class CheckoutInputViewModel: ObservableObject {
-    @Published public var itemName: String = ""
-    @Published public var itemPriceText: String = ""
-    @Published public var quantity: Int = 1
-    @Published public var isLoadingCart: Bool = false
-    @Published public var errorMessage: String?
+@Observable
+public final class CheckoutInputViewModel {
+    public var itemName: String = ""
+    public var itemPriceText: String = ""
+    public var quantity: Int = 1
+    public var isLoadingCart: Bool = false
+    public var errorMessage: String?
     
     private weak var coordinator: CheckoutCoordinatorProtocol?
     private let repository: OrderRepositoryProtocol

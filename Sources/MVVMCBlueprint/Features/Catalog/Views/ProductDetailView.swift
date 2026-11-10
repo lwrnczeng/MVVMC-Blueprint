@@ -3,81 +3,75 @@ import SwiftUI
 public struct ProductDetailView: View {
     public let product: Product
     private weak var coordinator: CatalogCoordinatorProtocol?
-    
+
     public init(product: Product, coordinator: CatalogCoordinatorProtocol?) {
         self.product = product
         self.coordinator = coordinator
     }
-    
+
     public var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 AsyncImage(url: URL(string: product.thumbnail)) { image in
-                    image.resizable().aspectRatio(contentMode: .fit)
+                    image
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
                 } placeholder: {
                     Rectangle()
-                        .fill(Color.gray.opacity(0.2))
+                        .fill(.quaternary)
                         .frame(height: 220)
                 }
                 .frame(maxWidth: .infinity)
-                .cornerRadius(12)
-                
+                .clipShape(.rect(cornerRadius: 12))
+
                 VStack(alignment: .leading, spacing: 8) {
                     Text(product.title)
                         .font(.title2)
                         .bold()
-                    
+
                     HStack {
                         Text("Category: \(product.category.capitalized)")
                             .font(.subheadline)
-                            .foregroundColor(.secondary)
-                        
+                            .foregroundStyle(.secondary)
+
                         Spacer()
-                        
-                        HStack(spacing: 4) {
-                            Image(systemName: "star.fill")
-                                .foregroundColor(.yellow)
-                            Text(String(format: "%.1f", product.rating))
+
+                        Label {
+                            Text(product.rating, format: .number.precision(.fractionLength(1)))
                                 .bold()
+                        } icon: {
+                            Image(systemName: "star.fill")
+                                .foregroundStyle(.yellow)
                         }
                     }
-                    
-                    Text("$\(String(format: "%.2f", NSDecimalNumber(decimal: product.price).doubleValue))")
+
+                    Text(product.price, format: .currency(code: "USD"))
                         .font(.title)
                         .bold()
-                        .foregroundColor(.green)
+                        .foregroundStyle(.green)
                         .padding(.top, 4)
                 }
-                
+
                 Divider()
-                
+
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Description")
                         .font(.headline)
                     Text(product.description)
-                        .font(.body)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                 }
-                
-                Spacer(minLength: 30)
-                
-                Button(action: {
-                    coordinator?.proceedToCheckout(with: product)
-                }) {
-                    HStack {
-                        Image(systemName: "cart.fill.badge.plus")
-                        Text("Add to Cart & Checkout")
-                            .bold()
-                    }
+
+                Button("Add to Cart & Checkout", systemImage: "cart.fill.badge.plus", action: proceedToCheckout)
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.large)
                     .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.blue)
-                    .foregroundColor(.white)
-                    .cornerRadius(10)
-                }
             }
             .padding()
         }
         .navigationTitle("Product Details")
+    }
+
+    private func proceedToCheckout() {
+        coordinator?.proceedToCheckout(with: product)
     }
 }

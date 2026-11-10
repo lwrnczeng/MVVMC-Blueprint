@@ -1,14 +1,15 @@
 import Foundation
-import Combine
+import Observation
 
 /// Presentation logic and state management for promo code entry & calculation.
 @MainActor
-public final class DiscountViewModel: ObservableObject {
+@Observable
+public final class DiscountViewModel {
     public let order: Order
     
-    @Published public var promoCodeInput: String = ""
-    @Published public var appliedDiscount: Discount?
-    @Published public var errorMessage: String?
+    public var promoCodeInput: String = ""
+    public var appliedDiscount: Discount?
+    public var errorMessage: String?
     
     private weak var coordinator: CheckoutCoordinatorProtocol?
     private let calculateDiscountUseCase: CalculateDiscountUseCaseProtocol

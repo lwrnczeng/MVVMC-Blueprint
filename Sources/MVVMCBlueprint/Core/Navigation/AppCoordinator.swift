@@ -1,21 +1,23 @@
+import Observation
 import SwiftUI
 
 /// Root Coordinator orchestrating feature modules and handling cross-feature navigation.
 @MainActor
-public final class AppCoordinator: Coordinator, CatalogCoordinatorDelegate, ObservableObject {
+@Observable
+public final class AppCoordinator: Coordinator, CatalogCoordinatorDelegate {
     public var childCoordinators: [Coordinator] = []
-    @Published public var router: NavigationRouter
-    
-    public private(set) var catalogCoordinator: CatalogCoordinator!
-    public private(set) var checkoutCoordinator: CheckoutCoordinator!
-    
-    @Published public var selectedTab: Tab = .catalog
-    
+    public var router: NavigationRouter
+
+    public let catalogCoordinator: CatalogCoordinator
+    public let checkoutCoordinator: CheckoutCoordinator
+
+    public var selectedTab: Tab = .catalog
+
     public enum Tab: Hashable, Sendable {
         case catalog
         case checkout
     }
-    
+
     public convenience init() {
         self.init(
             router: NavigationRouter(),
@@ -23,7 +25,7 @@ public final class AppCoordinator: Coordinator, CatalogCoordinatorDelegate, Obse
             checkoutRouter: NavigationRouter()
         )
     }
-    
+
     public convenience init(router: NavigationRouter) {
         self.init(
             router: router,
@@ -31,7 +33,7 @@ public final class AppCoordinator: Coordinator, CatalogCoordinatorDelegate, Obse
             checkoutRouter: NavigationRouter()
         )
     }
-    
+
     public init(
         router: NavigationRouter,
         catalogRouter: NavigationRouter,
@@ -40,18 +42,19 @@ public final class AppCoordinator: Coordinator, CatalogCoordinatorDelegate, Obse
         self.router = router
         self.catalogCoordinator = CatalogCoordinator(router: catalogRouter)
         self.checkoutCoordinator = CheckoutCoordinator(router: checkoutRouter)
-        
+
         self.catalogCoordinator.delegate = self
         addChild(catalogCoordinator)
         addChild(checkoutCoordinator)
     }
-    
+
     public func start() {
         catalogCoordinator.start()
         checkoutCoordinator.start()
     }
-    
-    // MARK: - CatalogCoordinatorDelegate (Cross-Feature Navigation)
+
+    // MARK: - CatalogCoordinatorDelegate
+
     public func catalogDidSelectProductForCheckout(_ product: Product) {
         let orderItem = Order.Item(
             id: UUID(),
@@ -64,8 +67,7 @@ public final class AppCoordinator: Coordinator, CatalogCoordinatorDelegate, Obse
             items: [orderItem],
             subtotal: product.price
         )
-        
-        // Switch tab to checkout and launch flow with selected product
+
         selectedTab = .checkout
         checkoutCoordinator.showDiscount(for: order)
     }

@@ -1,7 +1,7 @@
 import SwiftUI
 
 public struct CheckoutInputView: View {
-    @ObservedObject var viewModel: CheckoutInputViewModel
+    @Bindable private var viewModel: CheckoutInputViewModel
     
     public init(viewModel: CheckoutInputViewModel) {
         self.viewModel = viewModel
@@ -9,29 +9,25 @@ public struct CheckoutInputView: View {
     
     public var body: some View {
         Form {
-            Section(header: Text("Live Remote API Data Demo")) {
-                Button(action: {
-                    Task {
-                        await viewModel.fetchDummyCart(id: 1)
-                    }
-                }) {
+            Section("Live Remote API Data Demo") {
+                Button(action: fetchCart) {
                     HStack {
                         if viewModel.isLoadingCart {
                             ProgressView()
                                 .padding(.trailing, 8)
                         } else {
                             Image(systemName: "cart.fill.badge.plus")
-                                .foregroundColor(.blue)
+                                .foregroundStyle(.blue)
                         }
                         Text(viewModel.isLoadingCart ? "Loading DummyJSON Cart..." : "Fetch Sample Cart (dummyjson.com/carts/1)")
                             .bold()
-                            .foregroundColor(.blue)
+                            .foregroundStyle(.blue)
                     }
                 }
                 .disabled(viewModel.isLoadingCart)
             }
             
-            Section(header: Text("Or Create Custom Item")) {
+            Section("Or Create Custom Item") {
                 TextField("Item Name (e.g. Swift Architecture Book)", text: $viewModel.itemName)
                 
                 TextField("Price per item (USD)", text: $viewModel.itemPriceText)
@@ -45,15 +41,13 @@ public struct CheckoutInputView: View {
             if let error = viewModel.errorMessage {
                 Section {
                     Text(error)
-                        .foregroundColor(.red)
+                        .foregroundStyle(.red)
                         .font(.footnote)
                 }
             }
             
             Section {
-                Button(action: {
-                    viewModel.proceedToDiscount()
-                }) {
+                Button(action: continueToDiscount) {
                     HStack {
                         Spacer()
                         Text("Continue to Discount")
@@ -64,5 +58,15 @@ public struct CheckoutInputView: View {
             }
         }
         .navigationTitle("Checkout")
+    }
+
+    private func fetchCart() {
+        Task {
+            await viewModel.fetchDummyCart(id: 1)
+        }
+    }
+
+    private func continueToDiscount() {
+        viewModel.proceedToDiscount()
     }
 }

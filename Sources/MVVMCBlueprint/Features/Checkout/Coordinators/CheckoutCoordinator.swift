@@ -1,22 +1,14 @@
+import Observation
 import SwiftUI
-
-/// Protocol defining navigation actions that ViewModels can request from the CheckoutCoordinator.
-/// Decouples ViewModels from concrete Coordinator implementation.
-@MainActor
-public protocol CheckoutCoordinatorProtocol: AnyObject {
-    func showDiscount(for order: Order)
-    func showPayment(for order: Order, discount: Discount?)
-    func showSuccess(result: PaymentResult)
-    func finishCheckout()
-}
 
 /// Concrete Coordinator for managing the Checkout user journey flow.
 @MainActor
-public final class CheckoutCoordinator: Coordinator, CheckoutCoordinatorProtocol, ObservableObject {
+@Observable
+public final class CheckoutCoordinator: Coordinator, CheckoutCoordinatorProtocol {
     public var childCoordinators: [Coordinator] = []
     
     /// Router managing the SwiftUI NavigationPath
-    public let router: NavigationRouter
+    public var router: NavigationRouter
     
     // Dependencies
     private let repository: OrderRepositoryProtocol
@@ -123,26 +115,6 @@ public final class CheckoutCoordinator: Coordinator, CheckoutCoordinatorProtocol
     }
     
     private func makeSuccessView(result: PaymentResult) -> some View {
-        VStack(spacing: 20) {
-            Image(systemName: "checkmark.circle.fill")
-                .font(.system(size: 64))
-                .foregroundColor(.green)
-            Text("Payment Successful!")
-                .font(.title)
-                .bold()
-            Text("Transaction ID: \(result.transactionId)")
-                .font(.subheadline)
-                .foregroundColor(.secondary)
-            Text("Total Paid: $\(NSDecimalNumber(decimal: result.totalPaid).stringValue)")
-                .font(.headline)
-            
-            Button("Done") {
-                self.finishCheckout()
-            }
-            .buttonStyle(.borderedProminent)
-            .padding(.top, 20)
-        }
-        .padding()
-        .navigationTitle("Receipt")
+        ReceiptView(result: result, onDone: finishCheckout)
     }
 }

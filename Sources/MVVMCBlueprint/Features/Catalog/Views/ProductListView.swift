@@ -1,75 +1,37 @@
 import SwiftUI
 
 public struct ProductListView: View {
-    @ObservedObject var viewModel: CatalogViewModel
-    
+    private let viewModel: CatalogViewModel
+
     public init(viewModel: CatalogViewModel) {
         self.viewModel = viewModel
     }
-    
+
     public var body: some View {
         Group {
             if viewModel.isLoading {
-                VStack(spacing: 12) {
-                    ProgressView()
-                    Text("Loading Products from DummyJSON...")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                ProgressView("Loading products")
+            } else if let errorMessage = viewModel.errorMessage {
+                ContentUnavailableView {
+                    Label("Unable to Load Products", systemImage: "exclamationmark.triangle")
+                } description: {
+                    Text(errorMessage)
+                } actions: {
+                    Button("Retry", action: retryLoading)
+                        .buttonStyle(.borderedProminent)
                 }
-            } else if let error = viewModel.errorMessage {
-                VStack(spacing: 12) {
-                    Image(systemName: "exclamationmark.triangle.fill")
-                        .font(.largeTitle)
-                        .foregroundColor(.red)
-                    Text(error)
-                        .multilineTextAlignment(.center)
-                        .padding()
-                    Button("Retry") {
-                        Task { await viewModel.loadProducts() }
-                    }
-                    .buttonStyle(.borderedProminent)
-                }
+            } else if viewModel.products.isEmpty {
+                ContentUnavailableView(
+                    "No Products Available",
+                    systemImage: "shippingbox",
+                    description: Text("Try reloading the catalog later.")
+                )
             } else {
                 List(viewModel.products) { product in
-                    Button(action: {
+                    Button {
                         viewModel.selectProduct(product)
-                    }) {
-                        HStack(spacing: 16) {
-                            AsyncImage(url: URL(string: product.thumbnail)) { image in
-                                image.resizable().aspectRatio(contentMode: .fit)
-                            } placeholder: {
-                                Image(systemName: "photo")
-                                    .foregroundColor(.gray)
-                            }
-                            .frame(width: 50, height: 50)
-                            .cornerRadius(8)
-                            
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(product.title)
-                                    .font(.headline)
-                                    .foregroundColor(.primary)
-                                
-                                HStack {
-                                    Text("$\(String(format: "%.2f", NSDecimalNumber(decimal: product.price).doubleValue))")
-                                        .font(.subheadline)
-                                        .bold()
-                                        .foregroundColor(.green)
-                                    
-                                    Spacer()
-                                    
-                                    HStack(spacing: 2) {
-                                        Image(systemName: "star.fill")
-                                            .foregroundColor(.yellow)
-                                            .font(.caption)
-                                        Text(String(format: "%.1f", product.rating))
-                                            .font(.caption)
-                                            .foregroundColor(.secondary)
-                                    }
-                                }
-                            }
-                        }
-                        .padding(.vertical, 4)
-                        .contentShape(Rectangle())
+                    } label: {
+                        ProductRowView(product: product)
                     }
                     .buttonStyle(.plain)
                 }
@@ -80,6 +42,12 @@ public struct ProductListView: View {
             if viewModel.products.isEmpty {
                 await viewModel.loadProducts()
             }
+        }
+    }
+
+    private func retryLoading() {
+        Task {
+            await viewModel.loadProducts()
         }
     }
 }

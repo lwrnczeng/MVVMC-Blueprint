@@ -1,15 +1,16 @@
 import Foundation
-import Combine
+import Observation
 
 /// Presentation logic and state management for final payment processing.
 @MainActor
-public final class PaymentViewModel: ObservableObject {
+@Observable
+public final class PaymentViewModel {
     public let order: Order
     public let discount: Discount?
     public let finalAmount: Decimal
     
-    @Published public var isLoading: Bool = false
-    @Published public var errorMessage: String?
+    public var isLoading: Bool = false
+    public var errorMessage: String?
     
     private weak var coordinator: CheckoutCoordinatorProtocol?
     private let processPaymentUseCase: ProcessPaymentUseCaseProtocol

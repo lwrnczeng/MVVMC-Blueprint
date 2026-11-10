@@ -1,7 +1,7 @@
 import SwiftUI
 
 public struct DiscountView: View {
-    @ObservedObject var viewModel: DiscountViewModel
+    @Bindable private var viewModel: DiscountViewModel
     
     public init(viewModel: DiscountViewModel) {
         self.viewModel = viewModel
@@ -18,7 +18,7 @@ public struct DiscountView: View {
                         Text("\(item.name) (x\(item.quantity))")
                             .font(.subheadline)
                         Spacer()
-                        Text("$\(NSDecimalNumber(decimal: item.price * Decimal(item.quantity)).stringValue)")
+                        Text(item.price * Decimal(item.quantity), format: .currency(code: "USD"))
                             .font(.subheadline)
                     }
                 }
@@ -29,18 +29,17 @@ public struct DiscountView: View {
                     Text("Subtotal:")
                         .bold()
                     Spacer()
-                    Text("$\(NSDecimalNumber(decimal: viewModel.order.subtotal).stringValue)")
+                    Text(viewModel.order.subtotal, format: .currency(code: "USD"))
                         .bold()
                 }
             }
             .padding()
-            .background(Color.gray.opacity(0.1))
-            .cornerRadius(10)
+            .background(.quaternary, in: .rect(cornerRadius: 10))
             
             VStack(spacing: 12) {
                 Text("Try promo codes: SAVE10, SAVE20, VIP50")
                     .font(.caption)
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
                 
                 HStack {
                     TextField("Enter Promo Code", text: $viewModel.promoCodeInput)
@@ -49,44 +48,46 @@ public struct DiscountView: View {
                         .textInputAutocapitalization(.characters)
 #endif
                     
-                    Button("Apply") {
-                        viewModel.applyPromoCode()
-                    }
-                    .buttonStyle(.borderedProminent)
+                    Button("Apply", action: applyPromoCode)
+                        .buttonStyle(.borderedProminent)
                 }
                 
                 if let discount = viewModel.appliedDiscount {
                     HStack {
                         Image(systemName: "checkmark.seal.fill")
-                            .foregroundColor(.green)
-                        Text("Applied \(discount.code) (\(NSDecimalNumber(decimal: discount.percentage * 100).stringValue)% OFF)")
-                            .foregroundColor(.green)
+                            .foregroundStyle(.green)
+                        Text("Applied \(discount.code) (\(discount.percentage.formatted(.percent)) OFF)")
+                            .foregroundStyle(.green)
                             .bold()
                     }
                 }
                 
                 if let error = viewModel.errorMessage {
                     Text(error)
-                        .foregroundColor(.red)
+                        .foregroundStyle(.red)
                         .font(.footnote)
                 }
             }
             
             Spacer()
             
-            Button(action: {
-                viewModel.skipOrProceedToPayment()
-            }) {
-                Text(viewModel.appliedDiscount != nil ? "Proceed to Payment" : "Skip Discount & Pay")
-                    .bold()
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.blue)
-                    .foregroundColor(.white)
-                    .cornerRadius(10)
-            }
+            Button(
+                viewModel.appliedDiscount != nil ? "Proceed to Payment" : "Skip Discount & Pay",
+                action: proceed
+            )
+            .buttonStyle(.borderedProminent)
+            .controlSize(.large)
+            .frame(maxWidth: .infinity)
         }
         .padding()
         .navigationTitle("Discounts")
+    }
+
+    private func applyPromoCode() {
+        viewModel.applyPromoCode()
+    }
+
+    private func proceed() {
+        viewModel.skipOrProceedToPayment()
     }
 }

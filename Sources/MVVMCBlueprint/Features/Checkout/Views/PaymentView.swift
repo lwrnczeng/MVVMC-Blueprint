@@ -1,7 +1,7 @@
 import SwiftUI
 
 public struct PaymentView: View {
-    @ObservedObject var viewModel: PaymentViewModel
+    @Bindable private var viewModel: PaymentViewModel
     
     public init(viewModel: PaymentViewModel) {
         self.viewModel = viewModel
@@ -12,54 +12,54 @@ public struct PaymentView: View {
             VStack(spacing: 12) {
                 Text("Total Payment Amount")
                     .font(.subheadline)
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
                 
-                Text("$\(NSDecimalNumber(decimal: viewModel.finalAmount).stringValue)")
-                    .font(.system(size: 44, weight: .bold))
-                    .foregroundColor(.primary)
+                Text(viewModel.finalAmount, format: .currency(code: "USD"))
+                    .font(.largeTitle.bold())
+                    .foregroundStyle(.primary)
                 
                 if let discount = viewModel.discount {
-                    Text("Saved $\(NSDecimalNumber(decimal: discount.amountSaved).stringValue) with \(discount.code)")
+                    Text("Saved \(discount.amountSaved.formatted(.currency(code: "USD"))) with \(discount.code)")
                         .font(.footnote)
-                        .foregroundColor(.green)
+                        .foregroundStyle(.green)
                 }
             }
             .padding()
             .frame(maxWidth: .infinity)
-            .background(Color.blue.opacity(0.05))
-            .cornerRadius(12)
+            .background(.tint.opacity(0.08), in: .rect(cornerRadius: 12))
             
             if let error = viewModel.errorMessage {
                 Text(error)
-                    .foregroundColor(.red)
+                    .foregroundStyle(.red)
                     .font(.footnote)
             }
             
             Spacer()
             
-            Button(action: {
-                Task {
-                    await viewModel.processPayment()
-                }
-            }) {
+            Button(action: submitPayment) {
                 HStack {
                     if viewModel.isLoading {
                         ProgressView()
-                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                            .tint(.white)
                             .padding(.trailing, 8)
                     }
                     Text(viewModel.isLoading ? "Processing..." : "Confirm & Pay Now")
                         .bold()
                 }
                 .frame(maxWidth: .infinity)
-                .padding()
-                .background(viewModel.isLoading ? Color.gray : Color.green)
-                .foregroundColor(.white)
-                .cornerRadius(10)
             }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.large)
+            .tint(viewModel.isLoading ? .gray : .green)
             .disabled(viewModel.isLoading)
         }
         .padding()
         .navigationTitle("Review & Payment")
+    }
+
+    private func submitPayment() {
+        Task {
+            await viewModel.processPayment()
+        }
     }
 }

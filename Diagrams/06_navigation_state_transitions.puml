@@ -1,0 +1,74 @@
+@startuml NavigationStateTransitions
+skinparam backgroundColor White
+skinparam roundCorner 8
+skinparam shadowing false
+skinparam state {
+    BackgroundColor White
+    BorderColor #2C3E50
+    ArrowColor #2C3E50
+}
+
+header MVVM-C Navigation State Machine
+title NavigationPath Stack States & Transitions Across Features
+
+[*] --> CatalogFlow
+
+state "Catalog Navigation Flow (Tab .catalog)" as CatalogFlow #EBF5FB {
+    state "Catalog Root" as CatRoot {
+        CatRoot : **Screen:** ProductListView
+        CatRoot : **NavigationPath:** [] (Empty)
+        CatRoot : **Triggered By:** CatalogContainerView init
+    }
+
+    state "Product Detail" as CatDetail {
+        CatDetail : **Screen:** ProductDetailView
+        CatDetail : **NavigationPath:** [.productDetail(Product)]
+        CatDetail : **Triggered By:** coordinator.showProductDetail(product)
+        CatDetail : **Factory:** coordinator.buildView(for: .productDetail)
+    }
+
+    CatRoot --> CatDetail : User taps product card\nVM invokes coordinator.showProductDetail\nRouter appends .productDetail(product)
+    CatDetail --> CatRoot : User swipes back or taps Back button\nSwiftUI pops last route from NavigationPath
+}
+
+state "Checkout Navigation Flow (Tab .checkout)" as CheckoutFlow #FDF2E9 {
+    state "Checkout Root" as CheckRoot {
+        CheckRoot : **Screen:** CheckoutInputView
+        CheckRoot : **NavigationPath:** [] (Empty)
+        CheckRoot : **Triggered By:** CheckoutContainerView init / Tab select
+    }
+
+    state "Discount Step" as CheckDiscount {
+        CheckDiscount : **Screen:** DiscountView
+        CheckDiscount : **NavigationPath:** [.discount(Order)]
+        CheckDiscount : **Triggered By:** coordinator.showDiscount(for: order)
+        CheckDiscount : **Factory:** coordinator.buildView(for: .discount)
+    }
+
+    state "Payment Step" as CheckPayment {
+        CheckPayment : **Screen:** PaymentView
+        CheckPayment : **NavigationPath:** [.discount, .payment(Order, Discount?)]
+        CheckPayment : **Triggered By:** coordinator.showPayment(for: order, discount)
+        CheckPayment : **Factory:** coordinator.buildView(for: .payment)
+    }
+
+    state "Receipt Step" as CheckReceipt {
+        CheckReceipt : **Screen:** ReceiptView
+        CheckReceipt : **NavigationPath:** [.discount, .payment, .success(PaymentResult)]
+        CheckReceipt : **Triggered By:** coordinator.showSuccess(result)
+        CheckReceipt : **Factory:** coordinator.buildView(for: .success)
+    }
+
+    CheckRoot --> CheckDiscount : Standalone flow:\nUser enters item info & taps "Proceed"\nVM calls coordinator.showDiscount
+    CheckDiscount --> CheckPayment : User applies/skips promo & proceeds\nVM calls coordinator.showPayment\nRouter appends .payment(order, discount)
+    CheckPayment --> CheckReceipt : Payment succeeds\nVM calls coordinator.showSuccess\nRouter appends .success(result)
+    CheckReceipt --> CheckRoot : User taps "Done"\nReceiptView triggers finishCheckout()\nRouter calls popToRoot() (path = NavigationPath())
+
+    CheckPayment --> CheckDiscount : User taps Back button\nSwiftUI removes .payment from path
+    CheckDiscount --> CheckRoot : User taps Back button\nSwiftUI removes .discount from path
+}
+
+' Cross-Feature Navigation Transition
+CatDetail --> CheckDiscount : **Cross-Feature Transition:**\n1. User taps "Add to Cart & Checkout"\n2. CatCoord calls delegate?.catalogDidSelectProductForCheckout(product)\n3. AppCoord creates Order from Product\n4. AppCoord sets selectedTab = .checkout\n5. AppCoord calls CheckCoord.showDiscount(for: order)\n6. CheckRouter appends .discount(order)
+
+@enduml

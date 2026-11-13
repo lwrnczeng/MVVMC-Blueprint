@@ -1,97 +1,155 @@
 @startuml SequenceDiagram
 autonumber
-actor User
-participant AppContainerView as AppView
-participant ProductListView as CatView
-participant CatalogViewModel as CatVM
-participant ProductRepository as ProdRepo
-participant CatalogCoordinator as CatCoord
-participant AppCoordinator as AppCoord
-participant CheckoutCoordinator as CheckCoord
-participant NavigationRouter as Router
-participant DiscountViewModel as DiscVM
-participant CalculateDiscountUseCase as DiscUseCase
-participant PaymentViewModel as PayVM
-participant ProcessPaymentUseCase as PayUseCase
-participant OrderRepository as OrderRepo
+skinparam responseMessageBelowArrow true
+skinparam shadowing false
+skinparam roundCorner 8
+skinparam sequence {
+    ArrowColor #2C3E50
+    ActorBorderColor #2C3E50
+    LifeLineBorderColor #2C3E50
+    LifeLineBackgroundColor #EBF5FB
+    ParticipantBorderColor #2C3E50
+    ParticipantBackgroundColor White
+    BoxBackgroundColor #F8F9FA
+    BoxBorderColor #BDC3C7
+}
 
-== Feature 1: Catalog Browsing ==
+header MVVM-C End-to-End Business Lifecycle
+title Complete Multi-Feature Lifecycle: Data Fetching, Cross-Feature Handoff, Calculation & Payment
+
+actor User
+box "Root / App Level" #FAF0E6
+    participant "AppContainerView" as AppView
+    participant "AppCoordinator" as AppCoord
+end box
+
+box "Catalog Feature (Module 1)" #EBF5FB
+    participant "ProductListView" as CatView
+    participant "ProductDetailView" as DetailUI
+    participant "CatalogViewModel" as CatVM
+    participant "FetchProductsUseCase" as FetchUseCase
+    participant "ProductRepository" as ProdRepo
+    participant "CatalogCoordinator" as CatCoord
+end box
+
+box "Core Infrastructure" #F5EEF8
+    participant "URLSessionNetworkService" as NetService
+    participant "NavigationRouter" as Router
+end box
+
+box "Checkout Feature (Module 2)" #FDF2E9
+    participant "CheckoutCoordinator" as CheckCoord
+    participant "DiscountViewModel" as DiscVM
+    participant "CalculateDiscountUseCase" as DiscUseCase
+    participant "DiscountView" as DiscUI
+    participant "PaymentViewModel" as PayVM
+    participant "ProcessPaymentUseCase" as PayUseCase
+    participant "OrderRepository" as OrderRepo
+    participant "PaymentView" as PayUI
+    participant "ReceiptView" as ReceiptUI
+end box
+
+== 1. Catalog Browsing & Network Data Fetching ==
 User -> AppView: Launches App
 AppView -> CatView: Renders initial Catalog tab
-CatView -> CatVM: task { loadProducts() }
+CatView -> CatVM: task { await loadProducts() }
 activate CatVM
-CatVM -> ProdRepo: fetchProducts()
+CatVM -> FetchUseCase: execute()
+activate FetchUseCase
+FetchUseCase -> ProdRepo: fetchProducts()
 activate ProdRepo
-ProdRepo --> CatVM: Returns [Product] from DummyJSON
+ProdRepo -> NetService: request(ProductEndpoint.getProducts)
+activate NetService
+NetService --> ProdRepo: Decodes ProductDTO array from DummyJSON
+deactivate NetService
+ProdRepo --> FetchUseCase: Maps ProductDTO to [Product] Domain Entities
 deactivate ProdRepo
-CatVM --> CatView: Updates UI with product cards (titles, prices, ratings)
+FetchUseCase --> CatVM: Returns [Product]
+deactivate FetchUseCase
+CatVM --> CatView: Updates @Observable products array (UI re-renders)
 deactivate CatVM
 
-User -> CatView: Taps product (e.g. "Annibale Colombo Bed")
+== 2. Product Selection & Detail Presentation ==
+User -> CatView: Taps product card (e.g. "iPhone 15")
 CatView -> CatVM: selectProduct(product)
 activate CatVM
-CatVM -> CatCoord: showProductDetail(product)
+CatVM -> CatCoord: showProductDetail(product) [via CatalogCoordinatorProtocol]
 deactivate CatVM
 activate CatCoord
 CatCoord -> Router: push(CatalogRoute.productDetail(product))
-Router --> User: Displays ProductDetailView with image, price & description
+CatCoord -> DetailUI: buildView(for: .productDetail(product))
+Router --> User: Displays ProductDetailView with full specifications
 deactivate CatCoord
 
-== Cross-Feature Navigation (Delegate Contract) ==
-User -> CatView: Taps "Add to Cart & Checkout"
-CatView -> CatCoord: proceedToCheckout(with: product)
+== 3. Cross-Feature Navigation (Delegate Contract) ==
+User -> DetailUI: Taps "Add to Cart & Checkout"
+DetailUI -> CatCoord: proceedToCheckout(with: product) [CatalogCoordinatorProtocol]
 activate CatCoord
 CatCoord -> AppCoord: catalogDidSelectProductForCheckout(product) [CatalogCoordinatorDelegate]
 deactivate CatCoord
 activate AppCoord
-AppCoord -> AppCoord: Convert Product -> Domain Order(items, subtotal)
+AppCoord -> AppCoord: Converts Product -> Domain Order(items, subtotal)
+AppCoord -> AppView: Sets selectedTab = .checkout
+AppView --> User: Active tab switches to Checkout Tab
 AppCoord -> CheckCoord: showDiscount(for: order)
 deactivate AppCoord
 activate CheckCoord
 CheckCoord -> Router: push(CheckoutRoute.discount(order))
+CheckCoord -> DiscUI: buildView(for: .discount(order))
 Router --> User: Displays DiscountView (Checkout Feature)
 deactivate CheckCoord
 
-== Feature 2: Checkout User Journey ==
-User -> DiscVM: Enters promo code "SAVE20" & Taps "Apply"
+== 4. Discount Calculation & Business Rules ==
+User -> DiscUI: Enters promo code "SAVE20" & taps "Apply"
+DiscUI -> DiscVM: applyPromoCode()
 activate DiscVM
 DiscVM -> DiscUseCase: execute(subtotal, promoCode: "SAVE20")
 activate DiscUseCase
 DiscUseCase --> DiscVM: Returns Discount(code: "SAVE20", amountSaved: 20%, finalAmount)
 deactivate DiscUseCase
-DiscVM --> User: Updates UI with discount & updated total
+DiscVM --> DiscUI: Updates UI with discount & updated total
 deactivate DiscVM
 
-User -> DiscVM: Taps "Proceed to Payment"
+User -> DiscUI: Taps "Proceed to Payment"
+DiscUI -> DiscVM: skipOrProceedToPayment()
 activate DiscVM
-DiscVM -> CheckCoord: showPayment(for: order, discount: discount)
+DiscVM -> CheckCoord: showPayment(for: order, discount: discount) [CheckoutCoordinatorProtocol]
 deactivate DiscVM
 activate CheckCoord
 CheckCoord -> Router: push(CheckoutRoute.payment(order, discount))
+CheckCoord -> PayUI: buildView(for: .payment(order, discount))
 Router --> User: Displays PaymentView
 deactivate CheckCoord
 
-User -> PayVM: Taps "Confirm & Pay Now"
+== 5. Payment Processing & Stack Unwinding ==
+User -> PayUI: Taps "Confirm & Pay Now"
+PayUI -> PayVM: processPayment()
 activate PayVM
 PayVM -> PayUseCase: execute(orderId, amount)
 activate PayUseCase
 PayUseCase -> OrderRepo: processPayment(orderId, amount)
 activate OrderRepo
-OrderRepo --> PayUseCase: Returns PaymentResult(transactionId: "TXN-1234", status: .success)
+OrderRepo -> NetService: request(CheckoutEndpoint.processPayment)
+activate NetService
+NetService --> OrderRepo: Mock payment response OK
+deactivate NetService
+OrderRepo --> PayUseCase: Returns PaymentResult(transactionId: "TXN-...", status: .success)
 deactivate OrderRepo
 PayUseCase --> PayVM: Returns PaymentResult
 deactivate PayUseCase
-PayVM -> CheckCoord: showSuccess(result: result)
+PayVM -> CheckCoord: showSuccess(result: result) [CheckoutCoordinatorProtocol]
 deactivate PayVM
 activate CheckCoord
 CheckCoord -> Router: push(CheckoutRoute.success(result))
-Router --> User: Displays Receipt View
+CheckCoord -> ReceiptUI: buildView(for: .success(result))
+Router --> User: Displays ReceiptView
 deactivate CheckCoord
 
-User -> CheckCoord: Taps "Done"
+User -> ReceiptUI: Taps "Done"
+ReceiptUI -> CheckCoord: onDone() -> finishCheckout()
 activate CheckCoord
 CheckCoord -> Router: popToRoot()
-Router --> User: Navigation resets to root view
+Router --> User: Navigation resets to root CheckoutInputView
 deactivate CheckCoord
 
 @enduml

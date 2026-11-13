@@ -1,271 +1,319 @@
 @startuml ClassDiagram
 skinparam classAttributeIconSize 0
+skinparam shadowing false
+skinparam roundCorner 8
 skinparam class {
     BackgroundColor White
     ArrowColor #2C3E50
     BorderColor #2C3E50
 }
 
-package "App / Root Level" {
+header MVVM-C Class Diagram
+title Detailed Class, Protocol & Entity Architecture
+
+package "App / Root Level" #FAF0E6 {
     class AppContainerView << View >> {
-        -appCoordinator: AppCoordinator
+        - appCoordinator: AppCoordinator
+        + body: some View (TabView)
     }
 
     interface Coordinator {
-        +childCoordinators: [Coordinator]
-        +start()
-        +addChild(coordinator: Coordinator)
-        +removeChild(coordinator: Coordinator)
+        + childCoordinators: [Coordinator]
+        + start()
+        + addChild(coordinator: Coordinator)
+        + removeChild(coordinator: Coordinator)
     }
 
-    class AppCoordinator << MainActor >> {
-        +router: NavigationRouter
-        +catalogCoordinator: CatalogCoordinator
-        +checkoutCoordinator: CheckoutCoordinator
-        +selectedTab: Tab
-        +start()
-        +catalogDidSelectProductForCheckout(Product)
+    class AppCoordinator << @Observable, @MainActor >> {
+        + childCoordinators: [Coordinator]
+        + router: NavigationRouter
+        + catalogCoordinator: CatalogCoordinator
+        + checkoutCoordinator: CheckoutCoordinator
+        + selectedTab: Tab
+        + start()
+        + catalogDidSelectProductForCheckout(product: Product)
     }
 
-    class NavigationRouter << MainActor >> {
-        +path: NavigationPath
-        +push(route: T)
-        +pop()
-        +popToRoot()
+    enum "AppCoordinator.Tab" as AppTab {
+        case catalog
+        case checkout
+    }
+
+    class NavigationRouter << @Observable, @MainActor >> {
+        + path: NavigationPath
+        + push<T: Hashable>(route: T)
+        + pop()
+        + popToRoot()
     }
 }
 
-package "Core Networking Infrastructure" {
+package "Core Networking Infrastructure" #F5EEF8 {
     interface APIEndpoint {
-        +baseURL: URL
-        +path: String
-        +method: HTTPMethod
-        +headers: [String: String]?
-        +queryItems: [URLQueryItem]?
-        +body: Data?
-        +urlRequest(): URLRequest
+        + baseURL: URL
+        + path: String
+        + method: HTTPMethod
+        + headers: [String: String]?
+        + queryItems: [URLQueryItem]?
+        + body: Data?
+        + urlRequest(): URLRequest
     }
 
-    interface NetworkServiceProtocol {
-        +request(endpoint: APIEndpoint): T
-        +requestData(endpoint: APIEndpoint): Data
+    interface NetworkServiceProtocol << Sendable >> {
+        + request<T: Decodable>(endpoint: APIEndpoint): T async throws
+        + requestData(endpoint: APIEndpoint): Data async throws
     }
 
-    class URLSessionNetworkService {
-        -session: URLSession
-        +request(endpoint: APIEndpoint): T
-        +requestData(endpoint: APIEndpoint): Data
+    class URLSessionNetworkService << Sendable >> {
+        - session: URLSession
+        + request<T: Decodable>(endpoint: APIEndpoint): T async throws
+        + requestData(endpoint: APIEndpoint): Data async throws
     }
 }
 
-package "Catalog Feature (Module 1)" {
+package "Catalog Feature (Module 1)" #EBF5FB {
     class CatalogContainerView << View >> {
-        -coordinator: CatalogCoordinator
-        -router: NavigationRouter
+        - coordinator: CatalogCoordinator
+        + body: some View (NavigationStack)
     }
 
-    interface CatalogCoordinatorDelegate {
-        +catalogDidSelectProductForCheckout(Product)
+    interface CatalogCoordinatorDelegate << AnyObject >> {
+        + catalogDidSelectProductForCheckout(product: Product)
     }
 
     interface CatalogCoordinatorProtocol {
-        +showProductDetail(Product)
-        +proceedToCheckout(with: Product)
+        + showProductDetail(product: Product)
+        + proceedToCheckout(with product: Product)
     }
 
-    class CatalogCoordinator << MainActor >> {
-        +router: NavigationRouter
-        +delegate: CatalogCoordinatorDelegate?
-        -fetchProductsUseCase: FetchProductsUseCaseProtocol
-        +showProductDetail(Product)
-        +proceedToCheckout(with: Product)
-        +buildView(for: CatalogRoute): View
+    class CatalogCoordinator << @Observable, @MainActor >> {
+        + childCoordinators: [Coordinator]
+        + router: NavigationRouter
+        + delegate: CatalogCoordinatorDelegate?
+        - fetchProductsUseCase: FetchProductsUseCaseProtocol
+        - catalogViewModel: CatalogViewModel
+        + start()
+        + showProductDetail(product: Product)
+        + proceedToCheckout(with product: Product)
+        + buildView(for route: CatalogRoute): some View
     }
 
-    enum CatalogRoute {
-        productList
-        productDetail(Product)
+    enum CatalogRoute << Hashable, Sendable >> {
+        case productList
+        case productDetail(Product)
     }
 
-    class CatalogViewModel << MainActor >> {
-        +products: [Product]
-        +isLoading: Bool
-        +errorMessage: String?
-        -coordinator: CatalogCoordinatorProtocol
-        -fetchProductsUseCase: FetchProductsUseCaseProtocol
-        +loadProducts() async
-        +selectProduct(Product)
+    class CatalogViewModel << @Observable, @MainActor >> {
+        + products: [Product]
+        + isLoading: Bool
+        + errorMessage: String?
+        - coordinator: CatalogCoordinatorProtocol
+        - fetchProductsUseCase: FetchProductsUseCaseProtocol
+        + loadProducts() async
+        + selectProduct(product: Product)
     }
 
-    interface ProductRepositoryProtocol {
-        +fetchProducts(): [Product]
-        +fetchProductDetails(id: Int): Product
+    class ProductListView << View >> {
+        - viewModel: CatalogViewModel
     }
 
-    interface FetchProductsUseCaseProtocol {
-        +execute(): [Product]
+    class ProductRowView << View >> {
+        + product: Product
     }
 
-    class FetchProductsUseCase {
-        -repository: ProductRepositoryProtocol
-        +execute(): [Product]
+    class ProductDetailView << View >> {
+        + product: Product
+        - coordinator: CatalogCoordinatorProtocol?
+        + proceedToCheckout()
     }
 
-    class ProductRepository {
-        -networkService: NetworkServiceProtocol
-        +fetchProducts(): [Product]
-        +fetchProductDetails(id: Int): Product
+    interface ProductRepositoryProtocol << Sendable >> {
+        + fetchProducts() async throws: [Product]
+        + fetchProductDetails(id: Int) async throws: Product
+    }
+
+    interface FetchProductsUseCaseProtocol << Sendable >> {
+        + execute() async throws: [Product]
+    }
+
+    class FetchProductsUseCase << Sendable >> {
+        - repository: ProductRepositoryProtocol
+        + execute() async throws: [Product]
+    }
+
+    class ProductRepository << Sendable >> {
+        - networkService: NetworkServiceProtocol
+        + fetchProducts() async throws: [Product]
+        + fetchProductDetails(id: Int) async throws: Product
     }
 
     enum ProductEndpoint {
-        getProducts
-        getProductDetails(id: Int)
+        case getProducts
+        case getProductDetails(id: Int)
     }
 
-    class Product << Entity >> {
-        +id: Int
-        +title: String
-        +description: String
-        +category: String
-        +price: Decimal
-        +rating: Double
-        +thumbnail: String
+    class Product << Entity, Hashable, Identifiable, Sendable >> {
+        + id: Int
+        + title: String
+        + description: String
+        + category: String
+        + price: Decimal
+        + rating: Double
+        + thumbnail: String
     }
 
-    class ProductDTO << Codable >> {
-        +id: Int
-        +title: String
-        +price: Double
-        +rating: Double
-        +thumbnail: String
-        +toDomain(): Product
+    class ProductDTO << Codable, Sendable >> {
+        + id: Int
+        + title: String
+        + price: Double
+        + rating: Double
+        + thumbnail: String
+        + toDomain(): Product
     }
 }
 
-package "Checkout Feature (Module 2)" {
+package "Checkout Feature (Module 2)" #FDF2E9 {
     class CheckoutContainerView << View >> {
-        -coordinator: CheckoutCoordinator
-        -router: NavigationRouter
+        - coordinator: CheckoutCoordinator
+        + body: some View (NavigationStack)
     }
 
     interface CheckoutCoordinatorProtocol {
-        +showDiscount(for: Order)
-        +showPayment(for: Order, discount: Discount?)
-        +showSuccess(result: PaymentResult)
-        +finishCheckout()
+        + showDiscount(for order: Order)
+        + showPayment(for order: Order, discount: Discount?)
+        + showSuccess(result: PaymentResult)
+        + finishCheckout()
     }
 
-    class CheckoutCoordinator << MainActor >> {
-        +router: NavigationRouter
-        -repository: OrderRepositoryProtocol
-        -calculateDiscountUseCase: CalculateDiscountUseCaseProtocol
-        -processPaymentUseCase: ProcessPaymentUseCaseProtocol
-        +showDiscount(for: Order)
-        +showPayment(for: Order, discount: Discount?)
-        +showSuccess(result: PaymentResult)
-        +finishCheckout()
-        +buildView(for: CheckoutRoute): View
+    class CheckoutCoordinator << @Observable, @MainActor >> {
+        + childCoordinators: [Coordinator]
+        + router: NavigationRouter
+        - repository: OrderRepositoryProtocol
+        - calculateDiscountUseCase: CalculateDiscountUseCaseProtocol
+        - processPaymentUseCase: ProcessPaymentUseCaseProtocol
+        + start()
+        + showDiscount(for order: Order)
+        + showPayment(for order: Order, discount: Discount?)
+        + showSuccess(result: PaymentResult)
+        + finishCheckout()
+        + buildView(for route: CheckoutRoute): some View
     }
 
-    enum CheckoutRoute {
-        inputOrder
-        discount(Order)
-        payment(Order, Discount?)
-        success(PaymentResult)
+    enum CheckoutRoute << Hashable, Sendable >> {
+        case inputOrder
+        case discount(Order)
+        case payment(Order, Discount?)
+        case success(PaymentResult)
     }
 
-    class CheckoutInputViewModel << MainActor >> {
-        +itemName: String
-        +itemPriceText: String
-        +quantity: Int
-        +isLoadingCart: Bool
-        -coordinator: CheckoutCoordinatorProtocol
-        -repository: OrderRepositoryProtocol
-        +fetchDummyCart(id: Int) async
-        +proceedToDiscount()
+    class CheckoutInputViewModel << @Observable, @MainActor >> {
+        + itemName: String
+        + itemPriceText: String
+        + quantity: Int
+        + isLoadingCart: Bool
+        - coordinator: CheckoutCoordinatorProtocol
+        - repository: OrderRepositoryProtocol
+        + fetchDummyCart(id: Int) async
+        + proceedToDiscount()
     }
 
-    class DiscountViewModel << MainActor >> {
-        +order: Order
-        +promoCodeInput: String
-        +appliedDiscount: Discount?
-        -coordinator: CheckoutCoordinatorProtocol
-        -calculateDiscountUseCase: CalculateDiscountUseCaseProtocol
-        +applyPromoCode()
-        +skipOrProceedToPayment()
+    class DiscountViewModel << @Observable, @MainActor >> {
+        + order: Order
+        + promoCodeInput: String
+        + appliedDiscount: Discount?
+        - coordinator: CheckoutCoordinatorProtocol
+        - calculateDiscountUseCase: CalculateDiscountUseCaseProtocol
+        + applyPromoCode()
+        + skipOrProceedToPayment()
     }
 
-    class PaymentViewModel << MainActor >> {
-        +order: Order
-        +discount: Discount?
-        +finalAmount: Decimal
-        -coordinator: CheckoutCoordinatorProtocol
-        -processPaymentUseCase: ProcessPaymentUseCaseProtocol
-        +processPayment() async
+    class PaymentViewModel << @Observable, @MainActor >> {
+        + order: Order
+        + discount: Discount?
+        + finalAmount: Decimal
+        - coordinator: CheckoutCoordinatorProtocol
+        - processPaymentUseCase: ProcessPaymentUseCaseProtocol
+        + processPayment() async
     }
 
-    interface OrderRepositoryProtocol {
-        +fetchCart(id: Int): Order
-        +submitOrder(order: Order): Order
-        +processPayment(orderId: UUID, amount: Decimal): PaymentResult
+    class CheckoutInputView << View >> {
+        - viewModel: CheckoutInputViewModel
     }
 
-    interface CalculateDiscountUseCaseProtocol {
-        +execute(subtotal: Decimal, promoCode: String): Discount
+    class DiscountView << View >> {
+        - viewModel: DiscountViewModel
     }
 
-    interface ProcessPaymentUseCaseProtocol {
-        +execute(orderId: UUID, amount: Decimal): PaymentResult
+    class PaymentView << View >> {
+        - viewModel: PaymentViewModel
     }
 
-    class CalculateDiscountUseCase {
-        +execute(subtotal: Decimal, promoCode: String): Discount
+    class ReceiptView << View >> {
+        - result: PaymentResult
+        - onDone: () -> Void
     }
 
-    class ProcessPaymentUseCase {
-        -repository: OrderRepositoryProtocol
-        +execute(orderId: UUID, amount: Decimal): PaymentResult
+    interface OrderRepositoryProtocol << Sendable >> {
+        + fetchCart(id: Int) async throws: Order
+        + submitOrder(order: Order) async throws: Order
+        + processPayment(orderId: UUID, amount: Decimal) async throws: PaymentResult
     }
 
-    class OrderRepository {
-        -networkService: NetworkServiceProtocol
-        +fetchCart(id: Int): Order
-        +submitOrder(order: Order): Order
-        +processPayment(orderId: UUID, amount: Decimal): PaymentResult
+    interface CalculateDiscountUseCaseProtocol << Sendable >> {
+        + execute(subtotal: Decimal, promoCode: String): Discount
+    }
+
+    interface ProcessPaymentUseCaseProtocol << Sendable >> {
+        + execute(orderId: UUID, amount: Decimal) async throws: PaymentResult
+    }
+
+    class CalculateDiscountUseCase << Sendable >> {
+        + execute(subtotal: Decimal, promoCode: String): Discount
+    }
+
+    class ProcessPaymentUseCase << Sendable >> {
+        - repository: OrderRepositoryProtocol
+        + execute(orderId: UUID, amount: Decimal) async throws: PaymentResult
+    }
+
+    class OrderRepository << Sendable >> {
+        - networkService: NetworkServiceProtocol
+        + fetchCart(id: Int) async throws: Order
+        + submitOrder(order: Order) async throws: Order
+        + processPayment(orderId: UUID, amount: Decimal) async throws: PaymentResult
     }
 
     enum CheckoutEndpoint {
-        getCart(id: Int)
-        getCarts
-        addCart(userId: Int, products)
-        processPayment(UUID, Decimal)
+        case getCart(id: Int)
+        case getCarts
+        case addCart(userId: Int, products)
+        case processPayment(UUID, Decimal)
     }
 
-    class Order << Entity >> {
-        +id: UUID
-        +items: [Item]
-        +subtotal: Decimal
+    class Order << Entity, Hashable, Identifiable, Sendable >> {
+        + id: UUID
+        + items: [Item]
+        + subtotal: Decimal
     }
 
-    class Discount << Entity >> {
-        +code: String
-        +percentage: Decimal
-        +amountSaved: Decimal
-        +finalAmount: Decimal
+    class Discount << Entity, Hashable, Sendable >> {
+        + code: String
+        + percentage: Decimal
+        + amountSaved: Decimal
+        + finalAmount: Decimal
     }
 
-    class PaymentResult << Entity >> {
-        +transactionId: String
-        +orderId: UUID
-        +totalPaid: Decimal
-        +status: Status
+    class PaymentResult << Entity, Hashable, Sendable >> {
+        + transactionId: String
+        + orderId: UUID
+        + totalPaid: Decimal
+        + status: Status
     }
 
-    class DummyCartDTO << Codable >> {
-        +id: Int
-        +products: [DummyCartProductDTO]
-        +total: Double
-        +toDomain(): Order
+    class DummyCartDTO << Codable, Sendable >> {
+        + id: Int
+        + products: [DummyCartProductDTO]
+        + total: Double
+        + toDomain(): Order
     }
 }
 
@@ -279,6 +327,7 @@ AppCoordinator ..|> CatalogCoordinatorDelegate
 AppCoordinator --> CatalogCoordinator
 AppCoordinator --> CheckoutCoordinator
 AppCoordinator --> NavigationRouter
+AppCoordinator --> AppTab
 CatalogCoordinator --> CatalogCoordinatorDelegate
 CatalogCoordinator ..|> CatalogCoordinatorProtocol
 CheckoutCoordinator ..|> CheckoutCoordinatorProtocol
@@ -290,6 +339,9 @@ CatalogCoordinator --> CatalogRoute
 CatalogCoordinator --> FetchProductsUseCaseProtocol
 CatalogViewModel --> CatalogCoordinatorProtocol
 CatalogViewModel --> FetchProductsUseCaseProtocol
+ProductListView --> CatalogViewModel
+ProductListView ..> ProductRowView
+ProductDetailView --> CatalogCoordinatorProtocol
 
 FetchProductsUseCaseProtocol <|.. FetchProductsUseCase
 FetchProductsUseCase --> ProductRepositoryProtocol
@@ -313,6 +365,10 @@ DiscountViewModel --> CheckoutCoordinatorProtocol
 DiscountViewModel --> CalculateDiscountUseCaseProtocol
 PaymentViewModel --> CheckoutCoordinatorProtocol
 PaymentViewModel --> ProcessPaymentUseCaseProtocol
+CheckoutInputView --> CheckoutInputViewModel
+DiscountView --> DiscountViewModel
+PaymentView --> PaymentViewModel
+ReceiptView --> CheckoutCoordinator
 
 CalculateDiscountUseCaseProtocol <|.. CalculateDiscountUseCase
 ProcessPaymentUseCaseProtocol <|.. ProcessPaymentUseCase

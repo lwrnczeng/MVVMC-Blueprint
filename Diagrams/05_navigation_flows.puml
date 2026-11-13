@@ -1,0 +1,175 @@
+@startuml NavigationFlows
+autonumber
+skinparam responseMessageBelowArrow true
+skinparam shadowing false
+skinparam roundCorner 8
+skinparam sequence {
+    ArrowColor #2C3E50
+    ActorBorderColor #2C3E50
+    LifeLineBorderColor #2C3E50
+    LifeLineBackgroundColor #EBF5FB
+    ParticipantBorderColor #2C3E50
+    ParticipantBackgroundColor White
+    BoxBackgroundColor #F8F9FA
+    BoxBorderColor #BDC3C7
+}
+
+header MVVM-C Navigation Flow Traces
+title Navigation Interactions: Intra-Feature, Cross-Feature & Unwinding
+
+actor User
+box "Root / App Orchestration" #FAF0E6
+    participant "AppContainerView\n(TabView)" as AppView
+    participant "AppCoordinator\n(@Observable)" as AppCoord
+end box
+
+box "Catalog Feature (Module 1)" #EBF5FB
+    participant "CatalogContainerView\n(NavigationStack)" as CatStack
+    participant "ProductListView" as ListUI
+    participant "CatalogViewModel" as CatVM
+    participant "CatalogCoordinator" as CatCoord
+    participant "ProductDetailView" as DetailUI
+end box
+
+box "Core Navigation Infrastructure" #F5EEF8
+    participant "Catalog Router\n(NavigationRouter)" as CatRouter
+    participant "Catalog Path\n(NavigationPath)" as CatPath
+    participant "Checkout Router\n(NavigationRouter)" as CheckRouter
+    participant "Checkout Path\n(NavigationPath)" as CheckPath
+end box
+
+box "Checkout Feature (Module 2)" #FDF2E9
+    participant "CheckoutCoordinator" as CheckCoord
+    participant "CheckoutContainerView\n(NavigationStack)" as CheckStack
+    participant "DiscountViewModel" as DiscVM
+    participant "DiscountView" as DiscUI
+    participant "PaymentViewModel" as PayVM
+    participant "PaymentView" as PayUI
+    participant "ReceiptView" as ReceiptUI
+end box
+
+== Scenario 1: Intra-Feature Navigation (Push & Pop via Router) ==
+
+User -> ListUI: Taps product card (e.g. "iPhone 15")
+ListUI -> CatVM: selectProduct(product)
+activate CatVM
+CatVM -> CatCoord: showProductDetail(product) [via CatalogCoordinatorProtocol]
+deactivate CatVM
+
+activate CatCoord
+CatCoord -> CatRouter: push(CatalogRoute.productDetail(product))
+activate CatRouter
+CatRouter -> CatPath: append(CatalogRoute.productDetail(product))
+deactivate CatRouter
+
+note over CatRouter, CatStack
+  **Observation & Two-Way Binding:**
+  CatStack holds 'NavigationStack(path: $coordinator.router.path)'.
+  Appending to CatPath notifies SwiftUI.
+end note
+
+CatPath --> CatStack: Path updated with [.productDetail(product)]
+CatStack -> CatCoord: buildView(for: .productDetail(product))
+CatCoord -> DetailUI: instantiates ProductDetailView(product, coordinator: self)
+CatCoord --> CatStack: returns DetailUI View
+deactivate CatCoord
+CatStack --> User: Animates push transition to ProductDetailView
+
+alt Native iOS Gesture Pop or Navigation Back Button
+    User -> DetailUI: Swipes edge / Taps Navigation Bar "< Back"
+    DetailUI -> CatPath: SwiftUI automatically removes last element
+    CatPath --> CatStack: Path updated to []
+    CatStack --> User: Animates pop back to ProductListView
+end
+
+== Scenario 2: Cross-Feature Navigation (Delegate Contract & Tab Switching) ==
+
+User -> DetailUI: Taps "Add to Cart & Checkout" button
+DetailUI -> CatCoord: proceedToCheckout(with: product) [CatalogCoordinatorProtocol]
+activate CatCoord
+CatCoord -> AppCoord: catalogDidSelectProductForCheckout(product) [CatalogCoordinatorDelegate]
+deactivate CatCoord
+
+note over CatCoord, AppCoord
+  **Strict Clean Architecture Decoupling:**
+  Catalog Feature has ZERO knowledge of Checkout Feature.
+  Communication happens strictly through Delegate interface.
+end note
+
+activate AppCoord
+AppCoord -> AppCoord: Transform Product -> Order(items: [item], subtotal: price)
+AppCoord -> AppView: Set selectedTab = .checkout
+AppView --> User: Active tab switches to Checkout Tab
+
+AppCoord -> CheckCoord: showDiscount(for: order)
+deactivate AppCoord
+
+activate CheckCoord
+CheckCoord -> CheckRouter: push(CheckoutRoute.discount(order))
+activate CheckRouter
+CheckRouter -> CheckPath: append(CheckoutRoute.discount(order))
+deactivate CheckRouter
+
+CheckPath --> CheckStack: Path updated with [.discount(order)]
+CheckStack -> CheckCoord: buildView(for: .discount(order))
+CheckCoord -> DiscVM: instantiates DiscountViewModel(order, coordinator, useCase)
+CheckCoord -> DiscUI: instantiates DiscountView(viewModel)
+CheckCoord --> CheckStack: returns DiscUI View
+deactivate CheckCoord
+CheckStack --> User: Displays DiscountView (Checkout tab)
+
+== Scenario 3: Flow Progression & Reset (Pop to Root) ==
+
+User -> DiscUI: Enters promo code and taps "Proceed to Payment"
+DiscUI -> DiscVM: skipOrProceedToPayment()
+activate DiscVM
+DiscVM -> CheckCoord: showPayment(for: order, discount: discount) [CheckoutCoordinatorProtocol]
+deactivate DiscVM
+
+activate CheckCoord
+CheckCoord -> CheckRouter: push(CheckoutRoute.payment(order, discount))
+activate CheckRouter
+CheckRouter -> CheckPath: append(CheckoutRoute.payment(order, discount))
+deactivate CheckRouter
+
+CheckPath --> CheckStack: Path updated with [.discount, .payment]
+CheckStack -> CheckCoord: buildView(for: .payment(order, discount))
+CheckCoord -> PayVM: instantiates PaymentViewModel(order, discount, coordinator, useCase)
+CheckCoord -> PayUI: instantiates PaymentView(viewModel)
+CheckCoord --> CheckStack: returns PayUI View
+deactivate CheckCoord
+CheckStack --> User: Displays PaymentView
+
+User -> PayUI: Taps "Confirm & Pay Now"
+PayUI -> PayVM: processPayment()
+activate PayVM
+PayVM -> PayVM: Executes payment use case (PaymentResult)
+PayVM -> CheckCoord: showSuccess(result: paymentResult) [CheckoutCoordinatorProtocol]
+deactivate PayVM
+
+activate CheckCoord
+CheckCoord -> CheckRouter: push(CheckoutRoute.success(result))
+activate CheckRouter
+CheckRouter -> CheckPath: append(CheckoutRoute.success(result))
+deactivate CheckRouter
+
+CheckPath --> CheckStack: Path updated with [.discount, .payment, .success]
+CheckStack -> CheckCoord: buildView(for: .success(result))
+CheckCoord -> ReceiptUI: instantiates ReceiptView(result, onDone: finishCheckout)
+CheckCoord --> CheckStack: returns ReceiptUI View
+deactivate CheckCoord
+CheckStack --> User: Displays ReceiptView with confirmation
+
+User -> ReceiptUI: Taps "Done" button
+ReceiptUI -> CheckCoord: onDone() -> finishCheckout()
+activate CheckCoord
+CheckCoord -> CheckRouter: popToRoot()
+activate CheckRouter
+CheckRouter -> CheckPath: path = NavigationPath() (clears stack)
+deactivate CheckRouter
+
+CheckPath --> CheckStack: Path updated to []
+CheckStack --> User: SwiftUI smoothly unwinds entire stack to root CheckoutInputView
+deactivate CheckCoord
+
+@enduml

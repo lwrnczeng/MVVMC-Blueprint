@@ -1,6 +1,11 @@
 @startuml LayerDependencies
 skinparam packageBackgroundColor #F8F9FA
 skinparam packageBorderColor #4A90E2
+skinparam shadowing false
+skinparam roundCorner 8
+
+header MVVM-C Layer Dependencies
+title Clean Architecture & Modular Layer Dependency
 
 package "App / Root Level" #FAF0E6 {
     [AppContainerView]
@@ -11,6 +16,7 @@ package "Catalog Feature (Module 1)" #EBF5FB {
     package "Catalog UI" {
         [CatalogContainerView]
         [ProductListView]
+        [ProductRowView]
         [ProductDetailView]
     }
     package "Catalog Presentation" {
@@ -37,6 +43,7 @@ package "Checkout Feature (Module 2)" #FDF2E9 {
         [CheckoutInputView]
         [DiscountView]
         [PaymentView]
+        [ReceiptView]
     }
     package "Checkout Presentation" {
         [CheckoutCoordinator]
@@ -80,6 +87,7 @@ package "Core Infrastructure Layer" #F5EEF8 {
 ' Catalog Feature Internal Flows (Strict Clean Architecture via Use Case)
 [CatalogContainerView] --> [CatalogCoordinator]
 [ProductListView] --> [CatalogViewModel]
+[ProductListView] ..> [ProductRowView]
 [ProductDetailView] --> [CatalogCoordinator]
 [CatalogViewModel] --> FetchUseCaseProto
 [CatalogViewModel] --> [CatalogCoordinator]
@@ -94,6 +102,7 @@ package "Core Infrastructure Layer" #F5EEF8 {
 [CheckoutInputView] --> [CheckoutInputViewModel]
 [DiscountView] --> [DiscountViewModel]
 [PaymentView] --> [PaymentViewModel]
+[ReceiptView] --> [CheckoutCoordinator]
 [CheckoutInputViewModel] ..> CoordProto
 [CheckoutInputViewModel] --> OrderRepoProto
 [DiscountViewModel] ..> CoordProto
